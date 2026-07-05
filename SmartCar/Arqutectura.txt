@@ -1,0 +1,118 @@
+                   INTERNET
+                       │
+        ┌──────────────┴──────────────┐
+        │                             │
+   PC Centro de Control         App Android
+   (Spring Boot + Web)          (Volante)
+        │                             │
+        └──────────────┬──────────────┘
+                       │
+                 Servidor Spring Boot
+                 API REST + MySQL
+                       │
+                       │
+                 Internet
+                       │
+                 Hotspot del teléfono
+                       │
+                  WiFi del ESP32
+                       │
+        ┌──────────────┴──────────────┐
+        │                             │
+     ESP32 Control               ESP32-CAM
+ (Motores, luces,             (Cámara y streaming)
+  servos, sensores)                  │
+        │                             │
+        └──────────────┬──────────────┘
+                       │
+                     Coche
+
+
+Android (Drive Control)
+          │
+          ▼
+Spring Boot (Control Center)
+          │
+      Base de Datos
+          │
+          ▼
+ESP32 Vehicle Controller
+          │
+          ├── Motores
+          ├── Luces
+          ├── Audio
+          ├── GPS
+          ├── Sensores
+          └── ESP32 Vision Module
+
+
+
+Objetivos  :
+	ESP32.
+	Cámara.
+	Spring Boot.
+	MySQL.
+	API REST.
+	Aplicación Android.
+	Interfaz web.
+	Usuarios y permisos.
+	Streaming de vídeo.
+	Telemetría.
+	GPS.
+
+Sí, me gusta más. Para la primera versión quedan 5 tablas y son suficientes.
+
+1. usuarios
+id
+nombre
+email
+password
+rol
+activo
+2. vehiculos
+id
+nombre
+modelo
+estado
+ip
+urlStream
+ultimaConexion
+
+Aquí metemos la URL de la cámara y ya no hace falta la tabla camaras.
+
+3. comandos
+id
+vehiculo_id
+usuario_id
+tipo
+valor
+fecha
+
+Ejemplos:
+
+tipo = MOTOR
+valor = ADELANTE
+
+o
+
+tipo = LUCES
+valor = ON
+
+o
+
+tipo = BOCINA
+valor = ON
+4. telemetria
+id
+vehiculo_id
+bateria
+velocidad
+temperatura
+wifi
+fecha
+5. logs
+id
+vehiculo_id
+nivel
+mensaje
+fecha

@@ -1,0 +1,48 @@
+1. Configuración inicial
+	git init → Inicializa un nuevo repositorio de Git en la carpeta actual. Crea la carpeta oculta .git donde se guarda todo el historial.
+
+	git clone [url] → Descarga (clona) un repositorio remoto (de GitHub, GitLab, etc.) en tu computadora, copiando todo su historial.
+
+2. Flujo de trabajo local (Guardar cambios)
+	git status → Muestra el estado actual del repositorio: qué archivos están modificados, cuáles están en el "área de preparación" (staging) y cuáles no tienen seguimiento.
+
+	git add [archivo] → Añade un archivo específico al área de preparación (staging). Usa git add . para añadir todos los archivos modificados.
+
+	git commit -m "mensaje" → Toma todo lo que está en el área de preparación y lo guarda en el historial del repositorio con un mensaje descriptivo.
+
+	git commit -am "mensaje" → Atajo que hace add de todos los archivos con seguimiento y commit en un solo paso (no sirve para archivos nuevos).
+
+3. Información y consulta (Revisar historial)
+	git log → Muestra el historial completo de commits (quién, cuándo y mensaje). Usa git log --oneline para verlo en formato resumido de una línea.
+
+	git diff → Muestra las diferencias línea por línea entre tus archivos actuales y la última versión guardada (commit).
+
+	git show [hash] → Muestra los detalles de un commit específico (cambios y metadatos).
+
+4. Ramas (Branches)
+	git branch → Lista todas las ramas locales y marca en cuál estás actualmente.
+
+	git branch [nombre-rama] → Crea una nueva rama (pero no te mueves a ella).
+
+	git checkout [nombre-rama] → Te mueve o "saltas" a esa rama específica.
+
+	git switch [nombre-rama] → Comando moderno (alternativa a checkout) para moverse entre ramas.
+
+	git merge [nombre-rama] → Une los cambios de la rama indicada a la rama actual donde estás parado.
+
+5. Repositorios remotos (Sincronizar con Internet)
+	git remote -v → Muestra la URL de los repositorios remotos asociados a tu proyecto (normalmente llamado "origin").
+
+	git push origin [nombre-rama] → Sube tus commits locales a la rama especificada en el repositorio remoto (ej: git push origin main).
+
+	git pull origin [nombre-rama] → Descarga los cambios del repositorio remoto y los fusiona (merge) automáticamente con tu rama local.
+
+	git fetch origin → Descarga los cambios del remoto pero NO los fusiona (te permite revisarlos antes con git diff).
+
+6. Deshacer y corregir (Por si te equivocas)
+	git reset [archivo] → Saca ese archivo del área de preparación (staging) sin borrar tus cambios.
+
+	git checkout -- [archivo] → Descarta los cambios NO guardados de un archivo y lo devuelve a como estaba en el último commit. (Cuidado: no se puede recuperar).
+
+	git revert [hash] → Crea un nuevo commit que deshace exactamente lo que hizo el commit indicado (es seguro porque no reescribe la historia).
+

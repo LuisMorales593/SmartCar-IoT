@@ -1,0 +1,51 @@
+<div th:fragment="content">
+    <h2>Control del Vehículo</h2>
+
+    <!-- Mensaje si no hay vehículo seleccionado -->
+    <div th:if="${vehiculoId == null}" class="card" style="background: #f8d7da; color: #721c24; padding: 20px; border-radius: 8px;">
+        <h3>Control no habilitado</h3>
+        <p>Para usar el control, primero inicia sesión seleccionando un vehículo.</p>
+        <a th:href="@{/web/sesion}" class="btn btn-primary">Ir a Iniciar Sesión</a>
+    </div>
+
+    <!-- Mensaje si el vehículo no está conectado -->
+    <div th:if="${vehiculoId != null and !vehiculoConectado}" class="card" style="background: #fff3cd; color: #856404; padding: 20px; border-radius: 8px;">
+        <h3>Vehículo no conectado</h3>
+        <p>El vehículo seleccionado no está activo. Espera a que el ESP32 se conecte.</p>
+        <a th:href="@{/web/vehiculos}" class="btn btn-primary">Ver vehículos</a>
+    </div>
+
+    <!-- Botones de control si está conectado -->
+    <div th:if="${vehiculoId != null and vehiculoConectado}">
+        <div class="card">
+            <h3>Botones de dirección</h3>
+            <form th:action="@{/web/control/comando}" method="post">
+                <input type="hidden" name="vehiculoId" th:value="${vehiculoId}">
+                <div style="display: grid; grid-template-columns: repeat(3, 60px); gap: 10px; max-width: 200px; margin: 0 auto;">
+                    <button type="submit" name="comando" value="adelante" style="grid-column: 2; padding: 15px; font-size: 24px;">⬆</button>
+                    <button type="submit" name="comando" value="izquierda" style="grid-column: 1; grid-row: 2; padding: 15px; font-size: 24px;">⬅</button>
+                    <button type="submit" name="comando" value="stop" style="grid-column: 2; grid-row: 2; padding: 15px; font-size: 24px;">⏹</button>
+                    <button type="submit" name="comando" value="derecha" style="grid-column: 3; grid-row: 2; padding: 15px; font-size: 24px;">➡</button>
+                    <button type="submit" name="comando" value="atras" style="grid-column: 2; grid-row: 3; padding: 15px; font-size: 24px;">⬇</button>
+                </div>
+            </form>
+        </div>
+
+        <div class="card">
+            <h3>Velocidad</h3>
+            <form th:action="@{/web/control/comando}" method="post">
+                <input type="hidden" name="comando" value="velocidad">
+                <input type="hidden" name="vehiculoId" th:value="${vehiculoId}">
+                <input type="range" name="valor" min="0" max="100" value="50" style="width: 200px;">
+                <button type="submit" class="btn btn-success">Aplicar velocidad</button>
+            </form>
+        </div>
+
+        <!-- Botón para abandonar sesión -->
+        <div style="margin-top: 20px; text-align: center;">
+            <a th:href="@{/web/sesion/cerrar(sesionId=${sesionId})}" 
+               class="btn btn-danger" 
+               onclick="return confirm('¿Cerrar sesión actual?')">Abandonar sesión</a>
+        </div>
+    </div>
+</div>
