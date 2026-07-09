@@ -132,16 +132,18 @@ input, select {
 	<header>
 		<h1>🚗 IoT Car Control</h1>
 		<nav>
-			<a th:href="@{/web/sesion}">Iniciar Sesión</a>
-			<a th:href="@{/web/vehiculos}">Vehículos</a>
-			<a th:href="@{/web/control}" target="_blank">Control</a>
-			<a th:href="@{/web/comandos}">Comandos</a>
-			<a th:href="@{/web/usuarios}">Usuarios</a>
+			<a th:href="@{/web/sesion}">Iniciar Sesión</a> <a
+				th:href="@{/web/vehiculos}">Vehículos</a>
+			<!-- Solo un enlace a Control, sin target="_blank" -->
+			<a th:href="@{/web/control}">Control</a> <a
+				th:href="@{/web/comandos}">Comandos</a> <a
+				th:href="@{/web/usuarios}">Usuarios</a>
 		</nav>
 	</header>
 
 	<main>
-		<div th:replace="~{${contenido} :: content}">Contenido por defecto (esto se reemplaza)</div>
+		<div th:replace="~{${contenido} :: content}">Contenido por
+			defecto (esto se reemplaza)</div>
 	</main>
 	<footer>
 		<p>Sistema IoT - Spring Boot &copy; 2026</p>
