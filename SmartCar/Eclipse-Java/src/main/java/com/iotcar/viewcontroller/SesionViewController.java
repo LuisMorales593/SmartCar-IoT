@@ -6,6 +6,7 @@ import com.iotcar.entity.Vehiculo;
 import com.iotcar.repository.SesionRepository;
 import com.iotcar.repository.UsuarioRepository;
 import com.iotcar.repository.VehiculoRepository;
+import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -40,7 +41,8 @@ public class SesionViewController {
 
     @PostMapping("/web/sesion/iniciar")
     public String iniciarSesion(@RequestParam Long usuarioId,
-                                @RequestParam Long vehiculoId) {
+                                @RequestParam Long vehiculoId,
+                                HttpSession session) {
         // Cerrar sesiones activas anteriores del mismo usuario
         List<Sesion> sesionesActivas = sesionRepository.findByUsuarioIdAndActivaTrue(usuarioId);
         for (Sesion s : sesionesActivas) {
@@ -63,17 +65,23 @@ public class SesionViewController {
         sesion.setActiva(true);
         sesionRepository.save(sesion);
 
-        return "redirect:/web/control?vehiculoId=" + vehiculoId;
+        // Guardar datos en la sesión HTTP
+        session.setAttribute("vehiculoId", vehiculoId);
+        session.setAttribute("usuarioId", usuarioId);
+        session.setAttribute("sesionId", sesion.getId());
+
+        return "redirect:/web/control";
     }
 
     @GetMapping("/web/sesion/cerrar")
-    public String cerrarSesion(@RequestParam Long sesionId) {
+    public String cerrarSesion(@RequestParam Long sesionId, HttpSession session) {
         Sesion sesion = sesionRepository.findById(sesionId).orElse(null);
         if (sesion != null && sesion.getActiva()) {
             sesion.setActiva(false);
             sesion.setFechaFin(LocalDateTime.now());
             sesionRepository.save(sesion);
         }
+        session.invalidate();
         return "redirect:/web/sesion";
     }
 }

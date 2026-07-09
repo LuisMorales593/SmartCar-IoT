@@ -6,7 +6,8 @@ import com.iotcar.entity.Vehiculo;
 import com.iotcar.repository.ComandoRepository;
 import com.iotcar.repository.SesionRepository;
 import com.iotcar.repository.VehiculoRepository;
-import com.iotcar.config.ComandoWebSocketHandler;  // ← NUEVA IMPORTACIÓN
+import com.iotcar.config.ComandoWebSocketHandler;
+import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -30,7 +31,13 @@ public class ControlViewController {
     private SesionRepository sesionRepository;
 
     @GetMapping("/web/control")
-    public String control(@RequestParam(required = false) Long vehiculoId, Model model) {
+    public String control(@RequestParam(required = false) Long vehiculoId,
+                          HttpSession session,
+                          Model model) {
+        if (vehiculoId == null) {
+            vehiculoId = (Long) session.getAttribute("vehiculoId");
+        }
+
         model.addAttribute("contenido", "control");
         model.addAttribute("vehiculoId", vehiculoId);
 
@@ -38,7 +45,6 @@ public class ControlViewController {
             Vehiculo vehiculo = vehiculoRepository.findById(vehiculoId).orElse(null);
             if (vehiculo != null) {
                 model.addAttribute("vehiculoConectado", "CONECTADO".equals(vehiculo.getEstado()));
-                // Buscar sesión activa para este vehículo
                 List<Sesion> sesiones = sesionRepository.findByVehiculoIdAndActivaTrue(vehiculoId);
                 if (!sesiones.isEmpty()) {
                     model.addAttribute("sesionId", sesiones.get(0).getId());
@@ -56,9 +62,16 @@ public class ControlViewController {
     @PostMapping("/web/control/comando")
     public String recibirComando(@RequestParam String comando,
                                  @RequestParam Long vehiculoId,
-                                 @RequestParam(required = false) String valor) {
+                                 @RequestParam(required = false) String valor,
+                                 HttpSession session) {
 
-        // 🔹 1. Enviar comando por WebSocket (si el ESP32 está conectado)
+        // 🔹 Obtener usuarioId de la sesión (en lugar de usar 1L fijo)
+        Long usuarioId = (Long) session.getAttribute("usuarioId");
+        if (usuarioId == null) {
+            usuarioId = 1L; // fallback (por si no hay sesión)
+        }
+
+        // 1. Enviar por WebSocket
         String mensajeWS;
         if ("velocidad".equals(comando)) {
             mensajeWS = "{\"tipo\":\"velocidad\",\"valor\":\"" + (valor != null ? valor : "50") + "\"}";
@@ -67,10 +80,10 @@ public class ControlViewController {
         }
         ComandoWebSocketHandler.enviarComando(vehiculoId, mensajeWS);
 
-        // 🔹 2. Guardar en la base de datos (historial)
+        // 2. Guardar en base de datos
         Comando cmd = new Comando();
         cmd.setVehiculoId(vehiculoId);
-        cmd.setUsuarioId(1L);
+        cmd.setUsuarioId(usuarioId);  // ← ahora usa el ID real del usuario
         cmd.setFecha(LocalDateTime.now());
 
         if ("velocidad".equals(comando)) {
@@ -82,8 +95,8 @@ public class ControlViewController {
         }
 
         comandoRepository.save(cmd);
-        System.out.println("Comando guardado: " + cmd.getTipo() + " = " + cmd.getValor());
+        System.out.println("Comando guardado - Usuario: " + usuarioId + ", Vehículo: " + vehiculoId + ", Comando: " + cmd.getTipo() + " = " + cmd.getValor());
 
-        return "redirect:/web/control?vehiculoId=" + vehiculoId;
+        return "redirect:/web/control";
     }
 }
