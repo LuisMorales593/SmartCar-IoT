@@ -6,6 +6,7 @@ import com.iotcar.entity.Vehiculo;
 import com.iotcar.repository.ComandoRepository;
 import com.iotcar.repository.SesionRepository;
 import com.iotcar.repository.VehiculoRepository;
+import com.iotcar.config.ComandoWebSocketHandler;  // ← NUEVA IMPORTACIÓN
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -56,6 +57,17 @@ public class ControlViewController {
     public String recibirComando(@RequestParam String comando,
                                  @RequestParam Long vehiculoId,
                                  @RequestParam(required = false) String valor) {
+
+        // 🔹 1. Enviar comando por WebSocket (si el ESP32 está conectado)
+        String mensajeWS;
+        if ("velocidad".equals(comando)) {
+            mensajeWS = "{\"tipo\":\"velocidad\",\"valor\":\"" + (valor != null ? valor : "50") + "\"}";
+        } else {
+            mensajeWS = "{\"tipo\":\"direccion\",\"valor\":\"" + comando + "\"}";
+        }
+        ComandoWebSocketHandler.enviarComando(vehiculoId, mensajeWS);
+
+        // 🔹 2. Guardar en la base de datos (historial)
         Comando cmd = new Comando();
         cmd.setVehiculoId(vehiculoId);
         cmd.setUsuarioId(1L);
