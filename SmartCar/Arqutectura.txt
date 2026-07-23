@@ -116,3 +116,82 @@ vehiculo_id
 nivel
 mensaje
 fecha
+
+
+com.iotcar
+├── controller          # Controladores REST API
+│   ├── VehiculoController
+│   ├── ComandoController
+│   ├── TelemetriaController
+│   ├── SesionController
+│   └── UsuarioController
+├── viewcontroller      # Controladores de vistas (Thymeleaf)
+│   ├── VehiculoViewController
+│   ├── ComandoViewController
+│   ├── ControlViewController
+│   ├── SesionViewController
+│   └── UsuarioViewController
+├── service            # Lógica de negocio (Services)
+│   ├── VehiculoService
+│   ├── ComandoService
+│   ├── TelemetriaService
+│   ├── UsuarioService
+│   └── VehiculoEstadoService (tarea programada)
+├── repository         # Acceso a datos (JPA)
+│   ├── VehiculoRepository
+│   ├── ComandoRepository
+│   ├── TelemetriaRepository
+│   ├── SesionRepository
+│   └── UsuarioRepository
+├── config             # Configuración (WebSocket, CORS, Seguridad)
+│   ├── WebSocketConfig
+│   └── ComandoWebSocketHandler
+├── entity             # Entidades JPA
+│   ├── Vehiculo
+│   ├── Comando
+│   ├── Telemetria
+│   ├── Sesion
+│   ├── Usuario
+│   └── Log
+├── dto                # Objetos de transferencia (para API)
+│   ├── VehiculoDTO
+│   ├── ComandoDTO
+│   └── TelemetriaDTO
+└── util               # Utilidades (convertidores, fechas, etc.)
+
+
+
+
+ Componentes necesarios (hardware)
+Componente	Cantidad	Notas
+ESP32 (control)	1	Ya lo tienes (ID 3 o 4)
+ESP32-CAM (video)	1	Para transmitir imagen
+Puente H (L298N o similar)	1	Para controlar motores
+Motor DC (con caja reductora)	2	Dirección y tracción
+Tira LED WS2812B	1	Animaciones RGB
+Módulo DFPlayer Mini	1	Sonidos (MP3)
+Altavoz (3W, 4-8Ω)	1	Para el DFPlayer
+Batería (7.4V o 12V)	1	Alimentación general
+Regulador de voltaje (5V)	1	Para ESP32 y otros módulos
+Tarjeta microSD	1	Para el DFPlayer (FAT32)
+
+
+Pines asignados (ESP32 principal – control)
+Función	Pines recomendados	Notas
+Motor Dirección (IN1, IN2)	GPIO 18, GPIO 19	Ya los usaste con LEDs, ahora van al puente H. Son PWM y de propósito general.
+Motor Tracción/Marcha (IN3, IN4)	GPIO 21, GPIO 22	Para avance/retroceso. Puedes usar PWM en uno de ellos para velocidad.
+Tira LED WS2812B	GPIO 5	Un solo pin de datos. Se recomienda una resistencia de 330Ω en serie.
+DFPlayer Mini (UART)	GPIO 16 (RX), GPIO 17 (TX)	Se comunica por serie a 9600 baudios. Coloca una resistencia de 1kΩ en TX→RX.
+Botón de emergencia o sensor	GPIO 32	(Opcional) Para un botón físico de STOP.
+LED de estado (opcional)	GPIO 2	Puede ser el LED onboard de la placa o un LED externo.
+🔌 Pines libres (para futuros usos)
+GPIO libres	Observaciones
+GPIO 4, 13, 14, 15, 23, 25, 26, 27, 33	De propósito general (entrada/salida).
+GPIO 34, 35, 36, 39	Solo entrada (útiles para sensores analógicos como potenciómetros o sensores de luz).
+
+Pines para la tira LED WS2812B (cualquier GPIO digital de propósito general, excepto 34-39 que son solo entrada):
+GPIO 4, 5, 13, 14, 15, 16, 17, 18, 19, 21, 22, 23, 25, 26, 27, 32, 33 (evita 0, 2, 12 por conflictos con el boot). 
+
+
+Motores (PWM o digital): GPIO 18, 19, 21, 22, 23, 25, 26, 27, 32, 33 (cualquiera de estos sirve para controlar con digitalWrite o ledcWrite para PWM).
+Evita 34-39 (solo entrada). Recomendados: 18, 19, 21, 22.

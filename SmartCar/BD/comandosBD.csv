@@ -1,0 +1,14 @@
+Table,"Create Table"
+comandos,"CREATE TABLE `comandos` (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `vehiculo_id` bigint NOT NULL,
+  `usuario_id` bigint NOT NULL,
+  `tipo` varchar(255) DEFAULT NULL,
+  `valor` varchar(255) DEFAULT NULL,
+  `fecha` datetime NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `vehiculo_id` (`vehiculo_id`),
+  KEY `usuario_id` (`usuario_id`),
+  CONSTRAINT `comandos_ibfk_1` FOREIGN KEY (`vehiculo_id`) REFERENCES `vehiculos` (`id`),
+  CONSTRAINT `comandos_ibfk_2` FOREIGN KEY (`usuario_id`) REFERENCES `usuarios` (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=112 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci"
