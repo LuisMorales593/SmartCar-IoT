@@ -117,48 +117,69 @@ nivel
 mensaje
 fecha
 
-
-com.iotcar
-├── controller          # Controladores REST API
-│   ├── VehiculoController
-│   ├── ComandoController
-│   ├── TelemetriaController
-│   ├── SesionController
-│   └── UsuarioController
-├── viewcontroller      # Controladores de vistas (Thymeleaf)
-│   ├── VehiculoViewController
-│   ├── ComandoViewController
-│   ├── ControlViewController
-│   ├── SesionViewController
-│   └── UsuarioViewController
-├── service            # Lógica de negocio (Services)
-│   ├── VehiculoService
-│   ├── ComandoService
-│   ├── TelemetriaService
-│   ├── UsuarioService
-│   └── VehiculoEstadoService (tarea programada)
-├── repository         # Acceso a datos (JPA)
-│   ├── VehiculoRepository
-│   ├── ComandoRepository
-│   ├── TelemetriaRepository
-│   ├── SesionRepository
-│   └── UsuarioRepository
-├── config             # Configuración (WebSocket, CORS, Seguridad)
-│   ├── WebSocketConfig
-│   └── ComandoWebSocketHandler
-├── entity             # Entidades JPA
-│   ├── Vehiculo
-│   ├── Comando
-│   ├── Telemetria
-│   ├── Sesion
-│   ├── Usuario
-│   └── Log
-├── dto                # Objetos de transferencia (para API)
-│   ├── VehiculoDTO
-│   ├── ComandoDTO
-│   └── TelemetriaDTO
-└── util               # Utilidades (convertidores, fechas, etc.)
-
+iotcar/
+├── src/
+│   ├── main/
+│   │   ├── java/
+│   │   │   └── com/
+│   │   │       └── iotcar/
+│   │   │           ├── IotcarApplication.java               ← Clase principal
+│   │   │           │
+│   │   │           ├── config/                               ← Configuraciones
+│   │   │           │   ├── ComandoWebSocketHandler.java      ← Manejo WS
+│   │   │           │   └── WebSocketConfig.java              ← Registro WS
+│   │   │           │
+│   │   │           ├── entity/                               ← Entidades JPA
+│   │   │           │   ├── Comando.java
+│   │   │           │   ├── Sesion.java
+│   │   │           │   ├── Telemetria.java
+│   │   │           │   ├── Usuario.java
+│   │   │           │   └── Vehiculo.java
+│   │   │           │
+│   │   │           ├── repository/                           ← Repositorios JPA
+│   │   │           │   ├── ComandoRepository.java
+│   │   │           │   ├── SesionRepository.java
+│   │   │           │   ├── TelemetriaRepository.java
+│   │   │           │   ├── UsuarioRepository.java
+│   │   │           │   └── VehiculoRepository.java
+│   │   │           │
+│   │   │           ├── controller/                           ← Controladores REST
+│   │   │           │   ├── ComandoController.java
+│   │   │           │   ├── SesionController.java
+│   │   │           │   ├── TelemetriaController.java
+│   │   │           │   ├── UsuarioController.java
+│   │   │           │   └── VehiculoController.java
+│   │   │           │
+│   │   │           ├── viewcontroller/                       ← Controladores de vista (Thymeleaf)
+│   │   │           │   ├── ComandoViewController.java
+│   │   │           │   ├── ControlViewController.java
+│   │   │           │   ├── LoginViewController.java
+│   │   │           │   ├── SesionViewController.java
+│   │   │           │   ├── UsuarioViewController.java
+│   │   │           │   └── VehiculoViewController.java
+│   │   │           │
+│   │   │           └── service/                              ← Servicios
+│   │   │               ├── SessionManager.java               ← Gestión de sesiones HTTP
+│   │   │               └── VehiculoEstadoServicio.java       ← Tarea programada
+│   │   │
+│   │   └── resources/
+│   │       ├── application.properties                        ← Configuración BD y JPA
+│   │       ├── static/                                       ← (vacío, para CSS/JS/imágenes)
+│   │       └── templates/                                    ← Plantillas Thymeleaf
+│   │           ├── layout.html                               ← Layout principal (con navbar)
+│   │           ├── login.html                                ← Página de login
+│   │           ├── fragmentos/ (opcional, pero se usan en layout)
+│   │           │   ├── comandos.html                         ← Listado de comandos (fragmento)
+│   │           │   ├── control.html                          ← Panel de control (fragmento)
+│   │           │   ├── sesion.html                           ← Formulario de inicio de sesión (fragmento)
+│   │           │   ├── usuarios.html                         ← Gestión usuarios (fragmento)
+│   │           │   └── vehiculos.html                        ← Gestión vehículos (fragmento)
+│   │           └── (Nota: En tu código, los fragmentos se incluyen en layout.html mediante th:replace)
+│   │
+│   └── test/                                                 ← (Tests, no proporcionados)
+│
+├── pom.xml                                                   ← Dependencias Maven
+└── (otros archivos .gitignore, etc.)
 
 
 
