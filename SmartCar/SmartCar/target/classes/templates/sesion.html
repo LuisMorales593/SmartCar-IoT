@@ -1,0 +1,23 @@
+<div th:fragment="content">
+    <h2>Iniciar Sesión</h2>
+
+    <div class="card">
+        <form th:action="@{/web/sesion/iniciar}" method="post">
+            <div class="form-group">
+                <label>Usuario:</label>
+                <select name="usuarioId" required>
+                    <option value="">Selecciona un usuario</option>
+                    <option th:each="u : ${usuarios}" th:value="${u.id}" th:text="${u.nombre}"></option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Vehículo:</label>
+                <select name="vehiculoId" required>
+                    <option value="">Selecciona un vehículo</option>
+                    <option th:each="v : ${vehiculos}" th:value="${v.id}" th:text="${v.nombre}"></option>
+                </select>
+            </div>
+            <button type="submit" class="btn btn-success">Iniciar Sesión</button>
+        </form>
+    </div>
+</div>

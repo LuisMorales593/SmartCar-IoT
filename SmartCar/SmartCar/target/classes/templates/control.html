@@ -1,0 +1,124 @@
+<div th:fragment="content">
+
+    <div th:if="${vehiculoId == null}" class="card" style="background: #f8d7da; color: #721c24; padding: 20px; border-radius: 8px;">
+        <h3>Control no habilitado</h3>
+        <p>Para usar el control, primero inicia sesión seleccionando un vehículo.</p>
+        <a th:href="@{/web/sesion}" class="btn btn-primary">Ir a Iniciar Sesión</a>
+    </div>
+
+    <div th:if="${vehiculoId != null and !vehiculoConectado}" class="card" style="background: #fff3cd; color: #856404; padding: 20px; border-radius: 8px;">
+        <h3>Vehículo no conectado</h3>
+        <p>El vehículo seleccionado no está activo. Espera a que el ESP32 se conecte.</p>
+        <a th:href="@{/web/vehiculos}" class="btn btn-primary">Ver vehículos</a>
+    </div>
+
+    <div th:if="${vehiculoId != null and vehiculoConectado}" 
+         style="display: flex; justify-content: center; align-items: center; gap: 40px; height: 60vh; background: #f0f0f0; border-radius: 12px; padding: 20px;">
+
+        <!-- Columna izquierda: Velocidad (▲▼) con valores con signo -->
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 15px;">
+            <form th:action="@{/web/control/comando}" method="post">
+                <input type="hidden" name="vehiculoId" th:value="${vehiculoId}">
+                <input type="hidden" name="comando" value="velocidad">
+                <input type="hidden" name="valor" th:value="${velocidadActual + 25 > 100 ? 100 : velocidadActual + 25}">
+                <button type="submit" style="background: #28a745; color: white; border: none; border-radius: 8px; padding: 20px; font-size: 32px; width: 80px;">▲</button>
+            </form>
+            <form th:action="@{/web/control/comando}" method="post">
+                <input type="hidden" name="vehiculoId" th:value="${vehiculoId}">
+                <input type="hidden" name="comando" value="velocidad">
+                <input type="hidden" name="valor" th:value="${velocidadActual - 25 < -100 ? -100 : velocidadActual - 25}">
+                <button type="submit" style="background: #dc3545; color: white; border: none; border-radius: 8px; padding: 20px; font-size: 32px; width: 80px;">▼</button>
+            </form>
+        </div>
+
+        <!-- Centro: Velocidad actual con indicador de dirección -->
+        <div style="text-align: center; font-size: 28px; font-weight: bold; min-width: 150px;">
+            <span th:if="${velocidadActual < 0}" style="color: #dc3545;">◀ RETRO</span>
+            <span th:if="${velocidadActual > 0}" style="color: #28a745;">AVANCE ▶</span>
+            <span th:if="${velocidadActual == 0}" style="color: #6c757d;">DETENIDO</span>
+            <br>
+            <span th:text="${velocidadActual}">0</span>%
+        </div>
+
+        <!-- Columna derecha: Dirección (◄►) con eventos de mouse -->
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 15px;">
+            <button id="btnIzquierda" 
+                    style="background: #007bff; color: white; border: none; border-radius: 8px; padding: 20px; font-size: 32px; width: 80px; cursor: pointer;">
+                ◄
+            </button>
+            <button id="btnDerecha" 
+                    style="background: #007bff; color: white; border: none; border-radius: 8px; padding: 20px; font-size: 32px; width: 80px; cursor: pointer;">
+                ►
+            </button>
+        </div>
+
+    </div>
+
+    <!-- Botón cerrar sesión (abajo) -->
+    <div style="text-align: center; margin-top: 20px;">
+        <a th:href="@{/web/sesion/cerrar(sesionId=${sesionId})}" 
+           class="btn btn-danger" 
+           onclick="return confirm('¿Cerrar sesión actual?')">Cerrar Sesión</a>
+    </div>
+
+    <!-- Script para eventos de mouse (flechas de dirección) -->
+    <script>
+        (function() {
+            var vehiculoId = document.querySelector('input[name="vehiculoId"]')?.value;
+
+            function enviarComando(valor) {
+                if (!vehiculoId) {
+                    console.error('No se encontró vehiculoId');
+                    return;
+                }
+                var form = document.createElement('form');
+                form.method = 'POST';
+                form.action = '/web/control/comando';
+                var input1 = document.createElement('input');
+                input1.type = 'hidden';
+                input1.name = 'vehiculoId';
+                input1.value = vehiculoId;
+                var input2 = document.createElement('input');
+                input2.type = 'hidden';
+                input2.name = 'comando';
+                input2.value = valor;
+                form.appendChild(input1);
+                form.appendChild(input2);
+                document.body.appendChild(form);
+                form.submit();
+            }
+
+            var btnIzq = document.getElementById('btnIzquierda');
+            var btnDer = document.getElementById('btnDerecha');
+
+            if (btnIzq) {
+                btnIzq.addEventListener('mousedown', function(e) {
+                    e.preventDefault();
+                    enviarComando('izquierda');
+                });
+                btnIzq.addEventListener('mouseup', function(e) {
+                    e.preventDefault();
+                    enviarComando('stop');
+                });
+                btnIzq.addEventListener('mouseleave', function(e) {
+                    enviarComando('stop');
+                });
+            }
+
+            if (btnDer) {
+                btnDer.addEventListener('mousedown', function(e) {
+                    e.preventDefault();
+                    enviarComando('derecha');
+                });
+                btnDer.addEventListener('mouseup', function(e) {
+                    e.preventDefault();
+                    enviarComando('stop');
+                });
+                btnDer.addEventListener('mouseleave', function(e) {
+                    enviarComando('stop');
+                });
+            }
+        })();
+    </script>
+
+</div>
