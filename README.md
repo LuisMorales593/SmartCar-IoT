@@ -1,8 +1,8 @@
 Smart Cart IoT es un proyecto que integra Internet de las Cosas (IoT) para desarrollar un carrito inteligente 
-capaz de mejorar la experiencia del usuario durante el proceso de compra. El sistema combina hardware y software.
+capaz de mejorar la experiencia del usuario amante de autos rc. El sistema combina hardware y software.
 
 El proyecto aplica conceptos de IoT, programación, integración de sensores y comunicación entre dispositivos,
-ofreciendo una solución tecnológica orientada a la automatización y la innovación en el sector del comercio inteligente.
+ofreciendo una solución tecnológica orientada a la automatización y la innovación en el sector del osio inteligente.
 
 Tecnologías utilizadas
 ESP32
