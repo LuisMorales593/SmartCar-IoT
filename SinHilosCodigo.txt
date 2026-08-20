@@ -2,13 +2,11 @@
 #include <HTTPClient.h>
 #include <ArduinoJson.h>
 #include <WebSocketsClient.h>
-#include <freertos/FreeRTOS.h>
-#include <freertos/task.h>
 
 // ===== CONFIGURACIÓN =====
 const char* SSID = "GaiaElCaballero";
 const char* PASSWORD = "Gaialord40@";
-const char* SERVER_HOST = "10.156.137.73";
+const char* SERVER_HOST = "10.116.132.73";
 const int SERVER_PORT = 8080;
 #define VEHICULO_ID 3
 
@@ -24,25 +22,18 @@ const int SERVER_PORT = 8080;
 #define LUZ_TRAS_AMAR 27
 
 // ===== VARIABLES =====
-volatile int velocidadActual = 0;
-String direccionActual = "stop";        // ← SIN volatile (no se usa en varias tareas)
-volatile bool lucesEncendidas = false;
-volatile bool motorEncendido = false;
-volatile bool wsConectado = false;
-volatile int heartbeatFallos = 0;
-const int MAX_HEARTBEAT_FALLOS = 3;
+int velocidadActual = 0;
+String direccionActual = "stop";
+bool lucesEncendidas = false;
+bool motorEncendido = false;
 
 WebSocketsClient webSocket;
+bool wsConectado = false;
 unsigned long lastHeartbeat = 0;
 
-// ===== PROTOTIPOS DE TAREAS =====
-void tareaWebSocket(void *pvParameters);
-void tareaHeartbeat(void *pvParameters);
-void tareaMotorDireccion(void *pvParameters);
-void tareaMotorVelocidad(void *pvParameters);
-void tareaLuces(void *pvParameters);
+int heartbeatFallos = 0;
+const int MAX_HEARTBEAT_FALLOS = 3;
 
-// ===== SETUP =====
 void setup() {
   Serial.begin(115200);
 
@@ -73,63 +64,28 @@ void setup() {
   webSocket.begin(SERVER_HOST, SERVER_PORT, "/ws/comandos");
   webSocket.onEvent(webSocketEvent);
   webSocket.setReconnectInterval(5000);
-
-  // Crear tareas
-  xTaskCreatePinnedToCore(tareaWebSocket, "WS", 4096, NULL, 2, NULL, 0);
-  xTaskCreatePinnedToCore(tareaHeartbeat, "HB", 4096, NULL, 1, NULL, 1);
-  xTaskCreatePinnedToCore(tareaMotorDireccion, "DIR", 2048, NULL, 1, NULL, 1);
-  xTaskCreatePinnedToCore(tareaMotorVelocidad, "VEL", 2048, NULL, 1, NULL, 1);
-  xTaskCreatePinnedToCore(tareaLuces, "LUCES", 2048, NULL, 0, NULL, 0);
 }
 
 void loop() {
-  vTaskDelay(portMAX_DELAY);
-}
+  webSocket.loop();
 
-// ===== TAREA WEBSOCKET =====
-void tareaWebSocket(void *pvParameters) {
-  while (true) {
-    webSocket.loop();
-    vTaskDelay(pdMS_TO_TICKS(10));
+  if (millis() - lastHeartbeat > 2000) {
+    lastHeartbeat = millis();
+    enviarHeartbeat();
+  }
+
+  if (WiFi.status() != WL_CONNECTED) {
+    Serial.println("WiFi perdido, reconectando...");
+    WiFi.reconnect();
   }
 }
 
-// ===== TAREA HEARTBEAT =====
-void tareaHeartbeat(void *pvParameters) {
-  while (true) {
-    if (WiFi.status() == WL_CONNECTED) {
-      enviarHeartbeat();
-    }
-    vTaskDelay(pdMS_TO_TICKS(2000));
-  }
-}
-
-// ===== TAREAS MOTORES (placeholder) =====
-void tareaMotorDireccion(void *pvParameters) {
-  while (true) {
-    vTaskDelay(pdMS_TO_TICKS(50));
-  }
-}
-
-void tareaMotorVelocidad(void *pvParameters) {
-  while (true) {
-    vTaskDelay(pdMS_TO_TICKS(50));
-  }
-}
-
-// ===== TAREA LUCES =====
-void tareaLuces(void *pvParameters) {
-  while (true) {
-    vTaskDelay(pdMS_TO_TICKS(100));
-  }
-}
-
-// ===== WEBSOCKET EVENT =====
 void webSocketEvent(WStype_t type, uint8_t * payload, size_t length) {
   switch (type) {
     case WStype_DISCONNECTED: {
       wsConectado = false;
       Serial.println("❌ WebSocket desconectado - Esperando reconexión...");
+      // NO resetear aquí (solo se resetea con heartbeat)
       break;
     }
 
@@ -236,7 +192,6 @@ void webSocketEvent(WStype_t type, uint8_t * payload, size_t length) {
   }
 }
 
-// ===== HEARTBEAT =====
 void enviarHeartbeat() {
   HTTPClient http;
   String url = "http://" + String(SERVER_HOST) + ":" + String(SERVER_PORT) + "/vehiculos/" + String(VEHICULO_ID);
@@ -261,7 +216,6 @@ void enviarHeartbeat() {
   http.end();
 }
 
-// ===== RESET =====
 void resetTodo() {
   velocidadActual = 0;
   direccionActual = "stop";
@@ -355,7 +309,6 @@ void setVelocidad(int porcentaje) {
   ledcWrite(TRAC_ENA, pwm);
 }
 
-// ===== LUCES =====
 void lucesOn() {
   digitalWrite(LUZ_DEL_ROJO, HIGH);
   digitalWrite(LUZ_DEL_AMAR, HIGH);
