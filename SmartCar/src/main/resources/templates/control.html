@@ -13,52 +13,152 @@
     </div>
 
     <div th:if="${vehiculoId != null and vehiculoConectado}" 
-         style="display: flex; justify-content: center; align-items: center; gap: 40px; height: 60vh; background: #f0f0f0; border-radius: 12px; padding: 20px;">
+         style="display: grid; grid-template-columns: repeat(10, 1fr); grid-template-rows: auto auto auto auto auto; gap: 15px; height: 80vh; background: #f0f0f0; border-radius: 12px; padding: 20px;">
 
-        <!-- Columna izquierda: Velocidad (▲▼) con valores con signo -->
-        <div style="display: flex; flex-direction: column; align-items: center; gap: 15px;">
+        <!-- FILA 1 -->
+        <!-- Columna 1: ON/OFF (circular) -->
+        <div style="grid-column: 1; grid-row: 1; justify-self: center; align-self: center;">
+            <form th:action="@{/web/control/comando}" method="post">
+                <input type="hidden" name="vehiculoId" th:value="${vehiculoId}">
+                <input type="hidden" name="comando" value="arrancar">
+                <input type="hidden" name="valor" th:value="${motorEncendido ? 'off' : 'on'}">
+                <button type="submit" 
+                        th:style="${motorEncendido ? 'background: #dc3545; color: white;' : 'background: #28a745; color: white;'}"
+                        style="border: none; border-radius: 50%; width: 60px; height: 60px; font-size: 24px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+                    ⏻
+                </button>
+            </form>
+        </div>
+
+        <!-- Columna 10: Panel Estado -->
+        <div style="grid-column: 7 / span 4; grid-row: 1; justify-self: end; align-self: center; background: #ffffff; padding: 10px 20px; border-radius: 8px; text-align: center; font-size: 18px; font-weight: bold; min-width: 200px;">
+            <span th:if="${!motorEncendido}" style="color: #6c757d;">⛔ APAGADO</span>
+            <span th:if="${motorEncendido and velocidadActual < 0}" style="color: #dc3545;">◀ RETRO <span th:text="${velocidadActual}">0</span>%</span>
+            <span th:if="${motorEncendido and velocidadActual > 0}" style="color: #28a745;">AVANCE ▶ <span th:text="${velocidadActual}">0</span>%</span>
+            <span th:if="${motorEncendido and velocidadActual == 0}" style="color: #6c757d;">DETENIDO 0%</span>
+        </div>
+
+        <!-- FILA 2 -->
+        <!-- Columna 2: ▲ (Adelante) -->
+        <div style="grid-column: 2; grid-row: 2; justify-self: center; align-self: center;">
             <form th:action="@{/web/control/comando}" method="post">
                 <input type="hidden" name="vehiculoId" th:value="${vehiculoId}">
                 <input type="hidden" name="comando" value="velocidad">
                 <input type="hidden" name="valor" th:value="${velocidadActual + 25 > 100 ? 100 : velocidadActual + 25}">
-                <button type="submit" style="background: #28a745; color: white; border: none; border-radius: 8px; padding: 20px; font-size: 32px; width: 80px;">▲</button>
+                <button type="submit" 
+                        th:disabled="${!motorEncendido}"
+                        style="background: #28a745; color: white; border: none; border-radius: 50%; width: 60px; height: 60px; font-size: 28px; cursor: pointer; opacity: 0.8; display: flex; align-items: center; justify-content: center;">
+                    ▲
+                </button>
             </form>
+        </div>
+
+        <!-- Columna 3: ⏹ (Freno Secuencial) -->
+        <div style="grid-column: 3; grid-row: 2; justify-self: center; align-self: center;">
             <form th:action="@{/web/control/comando}" method="post">
                 <input type="hidden" name="vehiculoId" th:value="${vehiculoId}">
-                <input type="hidden" name="comando" value="velocidad">
-                <input type="hidden" name="valor" th:value="${velocidadActual - 25 < -100 ? -100 : velocidadActual - 25}">
-                <button type="submit" style="background: #dc3545; color: white; border: none; border-radius: 8px; padding: 20px; font-size: 32px; width: 80px;">▼</button>
+                <input type="hidden" name="comando" value="stop_secuencial">
+                <input type="hidden" name="valor" value="on">
+                <button type="submit" 
+                        th:disabled="${!motorEncendido}"
+                        style="background: #ffc107; color: black; border: none; border-radius: 50%; width: 60px; height: 60px; font-size: 20px; font-weight: bold; cursor: pointer; opacity: 0.8; display: flex; align-items: center; justify-content: center;">
+                    ⏹
+                </button>
             </form>
         </div>
 
-        <!-- Centro: Velocidad actual con indicador de dirección -->
-        <div style="text-align: center; font-size: 28px; font-weight: bold; min-width: 150px;">
-            <span th:if="${velocidadActual < 0}" style="color: #dc3545;">◀ RETRO</span>
-            <span th:if="${velocidadActual > 0}" style="color: #28a745;">AVANCE ▶</span>
-            <span th:if="${velocidadActual == 0}" style="color: #6c757d;">DETENIDO</span>
-            <br>
-            <span th:text="${velocidadActual}">0</span>%
-        </div>
-
-        <!-- Columna derecha: Dirección (◄►) con eventos de mouse -->
-        <div style="display: flex; flex-direction: column; align-items: center; gap: 15px;">
+        <!-- Columna 8: ◄ (Izquierda) -->
+        <div style="grid-column: 8; grid-row: 2; justify-self: center; align-self: center;">
             <button id="btnIzquierda" 
-                    style="background: #007bff; color: white; border: none; border-radius: 8px; padding: 20px; font-size: 32px; width: 80px; cursor: pointer;">
+                    th:disabled="${!motorEncendido}"
+                    style="background: #007bff; color: white; border: none; border-radius: 50%; width: 60px; height: 60px; font-size: 28px; cursor: pointer; opacity: 0.8; display: flex; align-items: center; justify-content: center;">
                 ◄
             </button>
+        </div>
+
+        <!-- Columna 9: ► (Derecha) -->
+        <div style="grid-column: 9; grid-row: 2; justify-self: center; align-self: center;">
             <button id="btnDerecha" 
-                    style="background: #007bff; color: white; border: none; border-radius: 8px; padding: 20px; font-size: 32px; width: 80px; cursor: pointer;">
+                    th:disabled="${!motorEncendido}"
+                    style="background: #007bff; color: white; border: none; border-radius: 50%; width: 60px; height: 60px; font-size: 28px; cursor: pointer; opacity: 0.8; display: flex; align-items: center; justify-content: center;">
                 ►
             </button>
         </div>
 
-    </div>
+        <!-- FILA 3 -->
+        <!-- Columna 2: ▼ (Atrás) -->
+        <div style="grid-column: 2; grid-row: 3; justify-self: center; align-self: center;">
+            <form th:action="@{/web/control/comando}" method="post">
+                <input type="hidden" name="vehiculoId" th:value="${vehiculoId}">
+                <input type="hidden" name="comando" value="velocidad">
+                <input type="hidden" name="valor" th:value="${velocidadActual - 25 < -100 ? -100 : velocidadActual - 25}">
+                <button type="submit" 
+                        th:disabled="${!motorEncendido}"
+                        style="background: #dc3545; color: white; border: none; border-radius: 50%; width: 60px; height: 60px; font-size: 28px; cursor: pointer; opacity: 0.8; display: flex; align-items: center; justify-content: center;">
+                    ▼
+                </button>
+            </form>
+        </div>
 
-    <!-- Botón cerrar sesión (abajo) -->
-    <div style="text-align: center; margin-top: 20px;">
-        <a th:href="@{/web/sesion/cerrar(sesionId=${sesionId})}" 
-           class="btn btn-danger" 
-           onclick="return confirm('¿Cerrar sesión actual?')">Cerrar Sesión</a>
+        <!-- Columna 3: 🔴 (Freno Total) -->
+        <div style="grid-column: 3; grid-row: 3; justify-self: center; align-self: center;">
+            <form th:action="@{/web/control/comando}" method="post">
+                <input type="hidden" name="vehiculoId" th:value="${vehiculoId}">
+                <input type="hidden" name="comando" value="freno">
+                <button type="submit" 
+                        th:disabled="${!motorEncendido}"
+                        style="background: #dc3545; color: white; border: none; border-radius: 50%; width: 60px; height: 60px; font-size: 20px; cursor: pointer; opacity: 0.8; display: flex; align-items: center; justify-content: center;">
+                    ⏹
+                </button>
+            </form>
+        </div>
+
+        <!-- Columna 8: 💡 (Luces Altas) -->
+        <div style="grid-column: 8; grid-row: 3; justify-self: center; align-self: center;">
+            <form th:action="@{/web/control/comando}" method="post">
+                <input type="hidden" name="vehiculoId" th:value="${vehiculoId}">
+                <input type="hidden" name="comando" value="luces_altas">
+                <button type="submit" 
+                        th:disabled="${!motorEncendido}"
+                        style="background: #6c757d; color: white; border: none; border-radius: 50%; width: 60px; height: 60px; font-size: 20px; cursor: pointer; opacity: 0.8; display: flex; align-items: center; justify-content: center;">
+                    💡
+                </button>
+            </form>
+        </div>
+
+        <!-- Columna 9: 💡 (Luces Bajas) -->
+        <div style="grid-column: 9; grid-row: 3; justify-self: center; align-self: center;">
+            <form th:action="@{/web/control/comando}" method="post">
+                <input type="hidden" name="vehiculoId" th:value="${vehiculoId}">
+                <input type="hidden" name="comando" value="luces_bajas">
+                <button type="submit" 
+                        th:disabled="${!motorEncendido}"
+                        style="background: #6c757d; color: white; border: none; border-radius: 50%; width: 60px; height: 60px; font-size: 20px; cursor: pointer; opacity: 0.8; display: flex; align-items: center; justify-content: center;">
+                    💡
+                </button>
+            </form>
+        </div>
+
+        <!-- FILA 4: 6 botones circulares en el centro -->
+        <div style="grid-column: 3 / span 6; grid-row: 4; display: flex; justify-content: center; gap: 20px; padding: 10px 0;">
+            <button style="border-radius: 50%; width: 60px; height: 60px; background: #e9ecef; border: none; font-size: 18px; cursor: default; opacity: 0.6; display: flex; align-items: center; justify-content: center;">●</button>
+            <button style="border-radius: 50%; width: 60px; height: 60px; background: #e9ecef; border: none; font-size: 18px; cursor: default; opacity: 0.6; display: flex; align-items: center; justify-content: center;">●</button>
+            <button style="border-radius: 50%; width: 60px; height: 60px; background: #e9ecef; border: none; font-size: 18px; cursor: default; opacity: 0.6; display: flex; align-items: center; justify-content: center;">●</button>
+            <button style="border-radius: 50%; width: 60px; height: 60px; background: #e9ecef; border: none; font-size: 18px; cursor: default; opacity: 0.6; display: flex; align-items: center; justify-content: center;">●</button>
+            <button style="border-radius: 50%; width: 60px; height: 60px; background: #e9ecef; border: none; font-size: 18px; cursor: default; opacity: 0.6; display: flex; align-items: center; justify-content: center;">●</button>
+            <button style="border-radius: 50%; width: 60px; height: 60px; background: #e9ecef; border: none; font-size: 18px; cursor: default; opacity: 0.6; display: flex; align-items: center; justify-content: center;">●</button>
+        </div>
+
+        <!-- FILA 5: Cerrar Sesión -->
+        <div style="grid-column: 10; grid-row: 5; justify-self: end; align-self: center;">
+            <a th:href="@{/web/sesion/cerrar(sesionId=${sesionId})}" 
+               class="btn btn-danger" 
+               onclick="return confirm('¿Cerrar sesión actual?')"
+               style="background: #dc3545; color: white; padding: 10px 15px; border-radius: 50%; text-decoration: none; display: flex; align-items: center; justify-content: center; width: 60px; height: 60px; font-size: 14px; text-align: center;">
+                ⏻
+            </a>
+        </div>
+
     </div>
 
     <!-- Script para eventos de mouse (flechas de dirección) -->

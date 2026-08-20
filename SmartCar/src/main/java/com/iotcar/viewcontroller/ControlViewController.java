@@ -84,6 +84,10 @@ public class ControlViewController {
         if ("arrancar".equals(comando)) {
             boolean encendido = "on".equals(valor);
             session.setAttribute(MOTOR_SESSION_KEY, encendido);
+            // 🔥 Si se apaga, la velocidad se resetea a 0 en la sesión
+            if (!encendido) {
+                session.setAttribute(VELOCIDAD_SESSION_KEY, 0);
+            }
             mensajeWS = "{\"tipo\":\"arrancar\",\"valor\":\"" + (encendido ? "on" : "off") + "\"}";
         } else if ("velocidad".equals(comando)) {
             int v = Integer.parseInt(valor);
