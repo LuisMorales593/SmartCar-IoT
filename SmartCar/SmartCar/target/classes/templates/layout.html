@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title th:text="${titulo} ?: 'IoT Car - Sistema de Control'">IoT
+	Car</title>
+
+<!-- Estilos básicos -->
+<style>
+* {
+	margin: 0;
+	padding: 0;
+	box-sizing: border-box;
+}
+
+body {
+	font-family: Arial, sans-serif;
+	background: #f4f4f4;
+	display: flex;
+	flex-direction: column;
+	min-height: 100vh;
+}
+
+header {
+	background: #1a1a2e;
+	color: white;
+	padding: 1rem 2rem;
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	flex-wrap: wrap;
+}
+
+header h1 {
+	font-size: 1.5rem;
+}
+
+nav {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.5rem;
+}
+
+nav a {
+	color: white;
+	text-decoration: none;
+	padding: 0.5rem 1rem;
+	border-radius: 4px;
+	transition: 0.3s;
+}
+
+nav a:hover {
+	background: #e94560;
+}
+
+main {
+	flex: 1;
+	padding: 2rem;
+	max-width: 1200px;
+	margin: 0 auto;
+	width: 100%;
+}
+
+footer {
+	background: #16213e;
+	color: #aaa;
+	text-align: center;
+	padding: 1rem;
+	margin-top: 2rem;
+}
+
+.card {
+	background: white;
+	border-radius: 8px;
+	padding: 1.5rem;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+	margin-bottom: 2rem;
+}
+
+table {
+	width: 100%;
+	border-collapse: collapse;
+}
+
+table th, table td {
+	border: 1px solid #ddd;
+	padding: 0.5rem;
+	text-align: left;
+}
+
+table th {
+	background: #f0f0f0;
+}
+
+.btn {
+	display: inline-block;
+	background: #1a1a2e;
+	color: white;
+	padding: 0.4rem 1rem;
+	border-radius: 4px;
+	text-decoration: none;
+	border: none;
+	cursor: pointer;
+	font-size: 0.9rem;
+}
+
+.btn:hover {
+	background: #e94560;
+}
+
+.btn-danger {
+	background: #c0392b;
+}
+
+.btn-success {
+	background: #27ae60;
+}
+
+form.inline {
+	display: inline;
+}
+
+input, select {
+	padding: 0.4rem;
+	border: 1px solid #ccc;
+	border-radius: 4px;
+}
+
+/* Estilos para botones de velocidad */
+.btn-velocidad {
+    background: #6c757d;
+    color: white;
+}
+.btn-velocidad-active {
+    background: #007bff;
+    color: white;
+    box-shadow: 0 0 0 2px #0056b3;
+}
+</style>
+</head>
+<body>
+	<header>
+		<h1>🚗 IoT Car Control</h1>
+		<nav>
+			
+			<a th:href="@{/web/vehiculos}">Vehículos</a>
+			<a th:href="@{/web/control}">Control</a>
+			<a th:href="@{/web/comandos}">Comandos</a>
+			<a th:href="@{/web/usuarios}">Usuarios</a>
+		</nav>
+	</header>
+
+	<main>
+		<div th:replace="~{${contenido} :: content}">Contenido por defecto (esto se reemplaza)</div>
+	</main>
+
+	<footer>
+		<p>Sistema IoT - Spring Boot &copy; 2026</p>
+	</footer>
+</body>
+</html>

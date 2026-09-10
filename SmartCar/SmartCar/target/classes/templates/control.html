@@ -1,0 +1,225 @@
+<div th:fragment="content">
+
+    <!-- CONTROL NO HABILITADO -->
+    <div th:if="${vehiculoId == null}">
+        <h3>Control no habilitado</h3>
+        <p>Para usar el control, primero inicia sesión seleccionando un vehículo.</p>
+        <a th:href="@{/web/sesion}">Ir a Iniciar Sesión</a>
+    </div>
+
+    <!-- VEHICULO NO CONECTADO -->
+    <div th:if="${vehiculoId != null and !vehiculoConectado}">
+        <h3>Vehículo no conectado</h3>
+        <p>El vehículo seleccionado no está activo. Espera a que el ESP32 se conecte.</p>
+        <a th:href="@{/web/vehiculos}">Ver vehículos</a>
+    </div>
+
+    <!-- PANEL DE CONTROL -->
+    <div th:if="${vehiculoId != null and vehiculoConectado}">
+
+        <!-- FILA 1: SISTEMA + MOTOR + PANEL ESTADO -->
+        <div>
+            <!-- SISTEMA ON/OFF -->
+            <form th:action="@{/web/control/comando}" method="post">
+                <input type="hidden" name="vehiculoId" th:value="${vehiculoId}">
+                <input type="hidden" name="comando" value="arrancar">
+                <input type="hidden" name="valor" th:value="${sistemaEncendido ? 'off' : 'on'}">
+                <button type="submit">SISTEMA</button>
+            </form>
+
+            <!-- MOTOR ON/OFF -->
+            <form th:action="@{/web/control/comando}" method="post">
+                <input type="hidden" name="vehiculoId" th:value="${vehiculoId}">
+                <input type="hidden" name="comando" value="motor">
+                <input type="hidden" name="valor" th:value="${motorEncendido ? 'off' : 'on'}">
+                <button type="submit" th:disabled="${!sistemaEncendido}">MOTOR</button>
+            </form>
+
+            <!-- PANEL ESTADO -->
+            <div>
+                <span th:if="${!sistemaEncendido}">APAGADO</span>
+                <span th:if="${sistemaEncendido and !motorEncendido}">SISTEMA ON - MOTOR OFF</span>
+                <span th:if="${sistemaEncendido and motorEncendido and velocidadActual < 0}">RETRO <span th:text="${velocidadActual}">0</span>%</span>
+                <span th:if="${sistemaEncendido and motorEncendido and velocidadActual > 0}">AVANCE <span th:text="${velocidadActual}">0</span>%</span>
+                <span th:if="${sistemaEncendido and motorEncendido and velocidadActual == 0}">DETENIDO 0%</span>
+            </div>
+        </div>
+
+        <!-- FILA 2: ADELANTE + FRENO ROJO + FRENO AMARILLO + IZQUIERDA + DERECHA -->
+        <div>
+            <!-- ADELANTE -->
+            <form th:action="@{/web/control/comando}" method="post">
+                <input type="hidden" name="vehiculoId" th:value="${vehiculoId}">
+                <input type="hidden" name="comando" value="velocidad">
+                <input type="hidden" name="valor" th:value="${velocidadActual + 25 > 100 ? 100 : velocidadActual + 25}">
+                <button type="submit" th:disabled="${!motorEncendido}">▲</button>
+            </form>
+
+            <!-- FRENO ROJO (rapido) -->
+            <form th:action="@{/web/control/comando}" method="post">
+                <input type="hidden" name="vehiculoId" th:value="${vehiculoId}">
+                <input type="hidden" name="comando" value="freno">
+                <button type="submit" th:disabled="${!motorEncendido}">FRENO R</button>
+            </form>
+
+            <!-- FRENO AMARILLO (lento) -->
+            <form th:action="@{/web/control/comando}" method="post">
+                <input type="hidden" name="vehiculoId" th:value="${vehiculoId}">
+                <input type="hidden" name="comando" value="stop_secuencial">
+                <button type="submit" th:disabled="${!motorEncendido}">FRENO A</button>
+            </form>
+
+            <!-- IZQUIERDA -->
+            <button id="btnIzquierda" th:disabled="${!motorEncendido}">◄</button>
+
+            <!-- DERECHA -->
+            <button id="btnDerecha" th:disabled="${!motorEncendido}">►</button>
+        </div>
+
+        <!-- FILA 3: ATRAS -->
+        <div>
+            <!-- ATRAS -->
+            <button id="btnAtras" th:disabled="${!motorEncendido}">▼</button>
+        </div>
+
+        <!-- FILA 4: LUCES (8 BOTONES) -->
+        <div>
+            <!-- LUCES ALTAS -->
+            <form th:action="@{/web/control/comando}" method="post">
+                <input type="hidden" name="vehiculoId" th:value="${vehiculoId}">
+                <input type="hidden" name="comando" value="luces_altas">
+                <button type="submit" th:disabled="${!sistemaEncendido}">ALTAS</button>
+            </form>
+
+            <!-- LUCES BAJAS -->
+            <form th:action="@{/web/control/comando}" method="post">
+                <input type="hidden" name="vehiculoId" th:value="${vehiculoId}">
+                <input type="hidden" name="comando" value="luces_bajas">
+                <button type="submit" th:disabled="${!sistemaEncendido}">BAJAS</button>
+            </form>
+
+            <!-- BOTON 1 (LIBRE) -->
+            <button>LIBRE1</button>
+
+            <!-- LUCES MOTOR -->
+            <form th:action="@{/web/control/comando}" method="post">
+                <input type="hidden" name="vehiculoId" th:value="${vehiculoId}">
+                <input type="hidden" name="comando" value="luces_motor">
+                <button type="submit" th:disabled="${!sistemaEncendido}">MOTOR</button>
+            </form>
+
+            <!-- LUCES TECHO -->
+            <form th:action="@{/web/control/comando}" method="post">
+                <input type="hidden" name="vehiculoId" th:value="${vehiculoId}">
+                <input type="hidden" name="comando" value="luces_techo">
+                <button type="submit" th:disabled="${!sistemaEncendido}">TECHO</button>
+            </form>
+
+            <!-- LUCES TABLERO -->
+            <form th:action="@{/web/control/comando}" method="post">
+                <input type="hidden" name="vehiculoId" th:value="${vehiculoId}">
+                <input type="hidden" name="comando" value="luces_tablero">
+                <button type="submit" th:disabled="${!sistemaEncendido}">TABLERO</button>
+            </form>
+
+            <!-- BOTON 5 (BOCINA) -->
+            <form th:action="@{/web/control/comando}" method="post">
+                <input type="hidden" name="vehiculoId" th:value="${vehiculoId}">
+                <input type="hidden" name="comando" value="sonido">
+                <button type="submit" th:disabled="${!sistemaEncendido}">BOCINA</button>
+            </form>
+
+            <!-- LUCES BAJAS ATRAS -->
+            <form th:action="@{/web/control/comando}" method="post">
+                <input type="hidden" name="vehiculoId" th:value="${vehiculoId}">
+                <input type="hidden" name="comando" value="luces_bajas_atras">
+                <button type="submit" th:disabled="${!sistemaEncendido}">BAJAS ATRAS</button>
+            </form>
+        </div>
+
+        <!-- FILA 5: CERRAR SESION -->
+        <div>
+            <a th:href="@{/web/sesion/cerrar(sesionId=${sesionId})}"
+               onclick="return confirm('Cerrar sesión actual?')">
+                CERRAR SESION
+            </a>
+        </div>
+
+    </div>
+
+    <!-- SCRIPT PARA DIRECCION Y RETROCESO -->
+    <script>
+        (function() {
+            var vehiculoId = document.querySelector('input[name="vehiculoId"]')?.value;
+
+            function enviarComando(valor) {
+                if (!vehiculoId) {
+                    console.error('No se encontro vehiculoId');
+                    return;
+                }
+                var form = document.createElement('form');
+                form.method = 'POST';
+                form.action = '/web/control/comando';
+                var input1 = document.createElement('input');
+                input1.type = 'hidden';
+                input1.name = 'vehiculoId';
+                input1.value = vehiculoId;
+                var input2 = document.createElement('input');
+                input2.type = 'hidden';
+                input2.name = 'comando';
+                input2.value = valor;
+                form.appendChild(input1);
+                form.appendChild(input2);
+                document.body.appendChild(form);
+                form.submit();
+            }
+
+            var btnIzq = document.getElementById('btnIzquierda');
+            var btnDer = document.getElementById('btnDerecha');
+            var btnAtras = document.getElementById('btnAtras');
+
+            if (btnIzq) {
+                btnIzq.addEventListener('mousedown', function(e) {
+                    e.preventDefault();
+                    enviarComando('izquierda');
+                });
+                btnIzq.addEventListener('mouseup', function(e) {
+                    e.preventDefault();
+                    enviarComando('stop');
+                });
+                btnIzq.addEventListener('mouseleave', function(e) {
+                    enviarComando('stop');
+                });
+            }
+
+            if (btnDer) {
+                btnDer.addEventListener('mousedown', function(e) {
+                    e.preventDefault();
+                    enviarComando('derecha');
+                });
+                btnDer.addEventListener('mouseup', function(e) {
+                    e.preventDefault();
+                    enviarComando('stop');
+                });
+                btnDer.addEventListener('mouseleave', function(e) {
+                    enviarComando('stop');
+                });
+            }
+
+            if (btnAtras) {
+                btnAtras.addEventListener('mousedown', function(e) {
+                    e.preventDefault();
+                    enviarComando('velocidad_menos');
+                });
+                btnAtras.addEventListener('mouseup', function(e) {
+                    e.preventDefault();
+                    enviarComando('velocidad_stop');
+                });
+                btnAtras.addEventListener('mouseleave', function(e) {
+                    enviarComando('velocidad_stop');
+                });
+            }
+        })();
+    </script>
+
+</div>

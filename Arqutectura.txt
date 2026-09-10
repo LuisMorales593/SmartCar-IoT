@@ -216,3 +216,45 @@ GPIO 4, 5, 13, 14, 15, 16, 17, 18, 19, 21, 22, 23, 25, 26, 27, 32, 33 (evita 0, 
 
 Motores (PWM o digital): GPIO 18, 19, 21, 22, 23, 25, 26, 27, 32, 33 (cualquiera de estos sirve para controlar con digitalWrite o ledcWrite para PWM).
 Evita 34-39 (solo entrada). Recomendados: 18, 19, 21, 22.
+
+
+9/10/2026
+
+text
+┌─────────────────────────────────────────────────────────────────┐
+│                    ESQUEMA DE SINCRONIZACIÓN                    │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  WEB ←── WebSocket ──→ SERVIDOR ←── WebSocket ──→ ESP32       │
+│   │                      │                      │               │
+│   │    [Comandos]        │    [Reenvío]         │    [Acción]   │
+│   │    [Estado]          │    [Confirmación]    │    [Lectura]  │
+│   │                      │                      │               │
+│   ▼                      ▼                      ▼               │
+│  INTERFAZ    ←─── ESTADO GLOBAL ───→    HARDWARE              │
+│  VISUAL                        │         FÍSICO                │
+│                               │                                │
+│                    [Heartbeat cada 2s]                         │
+│                    [Push en cambios]                          │
+│                    [Confirmación comandos]                    │
+│                    [Cola de pendientes]                       │
+│                    [Reintentos automáticos]                   │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+
+COMPARACIÓN: PID vs COLAS
+Concepto PID	Equivalente con Colas
+Setpoint	Comando en la cola
+Controlador	Tarea que lee la cola
+Planta	Motor físico
+Sensor	Lectura de PWM/encoder
+Feedback	Heartbeat + Estado
+Error	Diferencia entre setpoint y real
+Acción de control	Ajuste de PWM
+9/10/2026
+
+1. ✅ Terminar el código con las 6 tareas y variables nuevas
+2. ✅ Probar que funciona (motores, luces, WebSocket con ESP32)
+3. ✅ Añadir WebSocket entre WEB y JAVA
+4. ✅ Probar que la WEB recibe estado en tiempo real
+5. ⏳ DESPUÉS: Añadir colas para sincronización
