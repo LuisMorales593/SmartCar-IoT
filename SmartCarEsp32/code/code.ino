@@ -1,4 +1,3 @@
-// ===== INCLUDES =====
 #include <WiFi.h>
 #include <HTTPClient.h>
 #include <ArduinoJson.h>
@@ -7,70 +6,59 @@
 #include <freertos/task.h>
 #include <Adafruit_NeoPixel.h>
 
-// ===== CONFIGURACIÓN =====
+// ===== CONFIGURACION =====
 const char* SSID = "GaiaElCaballero";
 const char* PASSWORD = "Gaialord40@";
 const char* SERVER_HOST = "10.245.193.73";
 const int SERVER_PORT = 8080;
 #define VEHICULO_ID 3
 
-// ===== PINES =====
-// Motores
-#define DIR_IN1 18   // Dirección uno
-#define DIR_IN2 19   // Dirección dos
-#define TRAC_IN1 21  // Avanzar
-#define TRAC_IN2 22  // Retroceder
-#define TRAC_ENA 4   // Potencia (PWM)
+// ===== PINES MOTORES =====
+#define DIR_IN1 18
+#define DIR_IN2 19
+#define TRAC_IN1 21
+#define TRAC_IN2 22
+#define TRAC_ENA 4
 
-// ===== LUCES RGB (NeoPixel) =====
+// ===== PINES LUCES RGB =====
 #define LED_ATRAS_PIN 5
 #define LED_ATRAS_NUM 4
-
 #define LED_ADELANTE_PIN 13
 #define LED_ADELANTE_NUM 4
-
 #define LED_MOTOR_PIN 14
 #define LED_MOTOR_NUM 16
-
 #define LED_TECHO_PIN 25
 #define LED_TECHO_NUM 3
-
 #define LED_TABLERO_PIN 26
 #define LED_TABLERO_NUM 6
-
 #define LED_BAJAS_ADELANTE_PIN 27
 #define LED_BAJAS_ADELANTE_NUM 4
-
 #define LED_BAJAS_ATRAS_PIN 32
 #define LED_BAJAS_ATRAS_NUM 4
 
-// ===== SONIDO (MP3-TF-16P) =====
+// ===== SONIDO =====
 #define MP3_RX 16
 #define MP3_TX 17
 #define MP3_BUSY 34
 
 // ===== ENUM =====
 enum Direccion {
-    IZQUIERDA,
-    DERECHA,
-    STOP
+  IZQUIERDA,
+  DERECHA,
+  STOP
 };
 
 // ===== VARIABLES =====
-// Nivel 1: Sistema general
 volatile bool sistemaEncendido = false;
-
-// Nivel 2: Motor de tracción
 volatile bool motorEncendido = false;
-
-// Movimiento
 volatile int velocidadActual = 0;
 volatile Direccion direccionActual = STOP;
 volatile bool direccionActiva = false;
-volatile int tipoFreno = 0;   // 0=ninguno, 1=rojo rapido, 2=amarillo lento
+volatile int tipoFreno = 0;
 volatile bool atrasPresionado = false;
+volatile bool subiendo = false;
+volatile bool bajando = false;
 
-// Luces (7 zonas)
 volatile bool lucesAtras = false;
 volatile bool lucesAdelante = false;
 volatile bool lucesMotor = false;
@@ -78,18 +66,16 @@ volatile bool lucesTecho = false;
 volatile bool lucesTablero = false;
 volatile bool lucesBajasAdelante = false;
 volatile bool lucesBajasAtras = false;
-
-// Sonido
 volatile bool sonidoActivo = false;
 
-// WebSocket y Heartbeat
 volatile bool wsConectado = false;
 volatile int heartbeatFallos = 0;
 const int MAX_HEARTBEAT_FALLOS = 3;
+
 WebSocketsClient webSocket;
 unsigned long lastHeartbeat = 0;
 
-// ===== OBJETOS NeoPixel (7 tiras) =====
+// ===== OBJETOS NeoPixel =====
 Adafruit_NeoPixel tiraAtras         = Adafruit_NeoPixel(LED_ATRAS_NUM, LED_ATRAS_PIN, NEO_GRB + NEO_KHZ800);
 Adafruit_NeoPixel tiraAdelante      = Adafruit_NeoPixel(LED_ADELANTE_NUM, LED_ADELANTE_PIN, NEO_GRB + NEO_KHZ800);
 Adafruit_NeoPixel tiraMotor         = Adafruit_NeoPixel(LED_MOTOR_NUM, LED_MOTOR_PIN, NEO_GRB + NEO_KHZ800);
@@ -98,24 +84,16 @@ Adafruit_NeoPixel tiraTablero       = Adafruit_NeoPixel(LED_TABLERO_NUM, LED_TAB
 Adafruit_NeoPixel tiraBajasAdelante = Adafruit_NeoPixel(LED_BAJAS_ADELANTE_NUM, LED_BAJAS_ADELANTE_PIN, NEO_GRB + NEO_KHZ800);
 Adafruit_NeoPixel tiraBajasAtras    = Adafruit_NeoPixel(LED_BAJAS_ATRAS_NUM, LED_BAJAS_ATRAS_PIN, NEO_GRB + NEO_KHZ800);
 
-
 // ===== PROTOTIPOS =====
-// Sistema
 void resetTodo();
 void enviarHeartbeat();
-
-// Motores
 void motorDireccionIzquierda();
 void motorDireccionDerecha();
 void motorStop();
 void motorTraccionAdelante(int velocidad);
 void motorTraccionAtras(int velocidad);
 void motorTraccionDetener();
-void aplicarTraccion();
 void setVelocidad(int porcentaje);
-void frenoActivo();
-
-// Luces (7 zonas)
 void apagarTodasLasLuces();
 void encenderLucesAtras();
 void encenderLucesAdelante();
@@ -125,18 +103,13 @@ void encenderLucesTablero();
 void encenderLucesBajasAdelante();
 void encenderLucesBajasAtras();
 void encenderFrenoAtras();
+void cascadaTablero();
 
-// Sonido
-//void reproducirSonido(int pista);
-//void detenerSonido();
-
-// ===== PROTOTIPOS DE TAREAS =====
 void tareaWebSocket(void *pvParameters);
 void tareaHeartbeat(void *pvParameters);
 void tareaMotorDireccion(void *pvParameters);
 void tareaMotorVelocidad(void *pvParameters);
 void tareaLuces(void *pvParameters);
-//void tareaSonido(void *pvParameters);
 
 // ===== SETUP =====
 void setup() {
@@ -150,7 +123,6 @@ void setup() {
 
   ledcAttach(TRAC_ENA, 5000, 8);
 
-  // ===== LUCES =====
   tiraAtras.begin();
   tiraAdelante.begin();
   tiraMotor.begin();
@@ -159,11 +131,6 @@ void setup() {
   tiraBajasAdelante.begin();
   tiraBajasAtras.begin();
   apagarTodasLasLuces();
-
-  // ===== SONIDO (comentado por ahora) =====
-  // pinMode(MP3_BUSY, INPUT);
-  // mp3Serial.begin(9600, SERIAL_8N1, MP3_RX, MP3_TX);
-  // delay(1000);
 
   resetTodo();
 
@@ -174,7 +141,7 @@ void setup() {
     Serial.print(".");
   }
   Serial.println("\nConectado! IP: " + WiFi.localIP().toString());
-  Serial.println("Vehículo ID fijo: " + String(VEHICULO_ID));
+  Serial.println("Vehiculo ID fijo: " + String(VEHICULO_ID));
 
   webSocket.begin(SERVER_HOST, SERVER_PORT, "/ws/comandos");
   webSocket.onEvent(webSocketEvent);
@@ -185,7 +152,6 @@ void setup() {
   xTaskCreatePinnedToCore(tareaMotorDireccion, "DIR", 2048, NULL, 1, NULL, 1);
   xTaskCreatePinnedToCore(tareaMotorVelocidad, "VEL", 2048, NULL, 1, NULL, 1);
   xTaskCreatePinnedToCore(tareaLuces, "LUCES", 2048, NULL, 1, NULL, 0);
-  // xTaskCreatePinnedToCore(tareaSonido, "SONIDO", 2048, NULL, 1, NULL, 1);
 }
 
 void loop() {
@@ -228,16 +194,13 @@ void tareaMotorDireccion(void *pvParameters) {
 
 void tareaMotorVelocidad(void *pvParameters) {
   while (true) {
-    // ===== FRENO ROJO (rapido) =====
     if (tipoFreno == 1) {
       velocidadActual = velocidadActual - 20;
       if (velocidadActual <= 0) {
         velocidadActual = 0;
         tipoFreno = 0;
       }
-    }
-    // ===== FRENO AMARILLO (lento) =====
-    else if (tipoFreno == 2) {
+    } else if (tipoFreno == 2) {
       velocidadActual = velocidadActual - 10;
       if (velocidadActual <= 0) {
         velocidadActual = 0;
@@ -262,10 +225,11 @@ void tareaLuces(void *pvParameters) {
     if (!sistemaEncendido) {
       apagarTodasLasLuces();
     } else {
-      // ===== TIRA ATRAS: direccion, freno, retroceso y boton atras =====
       if (tipoFreno != 0) {
         encenderFrenoAtras();
       } else if (velocidadActual < 0) {
+        encenderFrenoAtras();
+      } else if (bajando) {
         encenderFrenoAtras();
       } else if (atrasPresionado) {
         encenderFrenoAtras();
@@ -276,50 +240,14 @@ void tareaLuces(void *pvParameters) {
         tiraAtras.show();
       }
 
-      // ===== OTRAS 6 TIRAS (on/off) =====
-      if (lucesAdelante) {
-        encenderLucesAdelante();
-      } else {
-        tiraAdelante.clear();
-        tiraAdelante.show();
-      }
-
-      if (lucesBajasAdelante) {
-        encenderLucesBajasAdelante();
-      } else {
-        tiraBajasAdelante.clear();
-        tiraBajasAdelante.show();
-      }
-
-      if (lucesMotor) {
-        encenderLucesMotor();
-      } else {
-        tiraMotor.clear();
-        tiraMotor.show();
-      }
-
-      if (lucesTecho) {
-        encenderLucesTecho();
-      } else {
-        tiraTecho.clear();
-        tiraTecho.show();
-      }
-
-      if (lucesTablero) {
-        encenderLucesTablero();
-      } else {
-        tiraTablero.clear();
-        tiraTablero.show();
-      }
-
-      if (lucesBajasAtras) {
-        encenderLucesBajasAtras();
-      } else {
-        tiraBajasAtras.clear();
-        tiraBajasAtras.show();
-      }
+      if (lucesAdelante) encenderLucesAdelante(); else { tiraAdelante.clear(); tiraAdelante.show(); }
+      if (lucesBajasAdelante) encenderLucesBajasAdelante(); else { tiraBajasAdelante.clear(); tiraBajasAdelante.show(); }
+      if (lucesMotor) encenderLucesMotor(); else { tiraMotor.clear(); tiraMotor.show(); }
+      if (lucesTecho) encenderLucesTecho(); else { tiraTecho.clear(); tiraTecho.show(); }
+      if (lucesTablero) { cascadaTablero(); } else { tiraTablero.clear(); tiraTablero.show(); }
+      if (lucesBajasAtras) encenderLucesBajasAtras(); else { tiraBajasAtras.clear(); tiraBajasAtras.show(); }
     }
-    vTaskDelay(pdMS_TO_TICKS(100));
+    vTaskDelay(pdMS_TO_TICKS(50));
   }
 }
 
@@ -328,7 +256,7 @@ void webSocketEvent(WStype_t type, uint8_t * payload, size_t length) {
   switch (type) {
     case WStype_DISCONNECTED: {
       wsConectado = false;
-      Serial.println("WebSocket desconectado - Esperando reconexion...");
+      Serial.println("WebSocket desconectado");
       apagarTodasLasLuces();
       break;
     }
@@ -356,7 +284,6 @@ void webSocketEvent(WStype_t type, uint8_t * payload, size_t length) {
       String tipo = doc["tipo"].as<String>();
       String valor = doc["valor"].as<String>();
 
-      // ===== SISTEMA (nivel 1) =====
       if (tipo == "arrancar") {
         if (valor == "on") {
           sistemaEncendido = true;
@@ -367,12 +294,8 @@ void webSocketEvent(WStype_t type, uint8_t * payload, size_t length) {
           Serial.println("Sistema APAGADO");
         }
       }
-      // ===== MOTOR (nivel 2) =====
       else if (tipo == "motor") {
-        if (!sistemaEncendido) {
-          Serial.println("Sistema apagado, comando ignorado");
-          return;
-        }
+        if (!sistemaEncendido) { Serial.println("Sistema apagado, comando ignorado"); return; }
         if (valor == "on") {
           motorEncendido = true;
           Serial.println("Motor ENCENDIDO");
@@ -382,19 +305,14 @@ void webSocketEvent(WStype_t type, uint8_t * payload, size_t length) {
           Serial.println("Motor APAGADO");
         }
       }
-      // ===== RESET =====
       else if (tipo == "reset") {
         resetTodo();
         sistemaEncendido = false;
         motorEncendido = false;
         Serial.println("Reseteado");
       }
-      // ===== DIRECCION =====
       else if (tipo == "direccion" || tipo == "comando") {
-        if (!motorEncendido) {
-          Serial.println("Motor apagado, comando ignorado");
-          return;
-        }
+        if (!motorEncendido) { Serial.println("Motor apagado, comando ignorado"); return; }
         if (valor == "izquierda") {
           direccionActual = IZQUIERDA;
           direccionActiva = true;
@@ -411,133 +329,85 @@ void webSocketEvent(WStype_t type, uint8_t * payload, size_t length) {
           Serial.println("Direccion: STOP");
         }
       }
-      // ===== VELOCIDAD =====
       else if (tipo == "velocidad") {
-        if (!motorEncendido) {
-          Serial.println("Motor apagado, comando ignorado");
-          return;
-        }
+        if (!motorEncendido) { Serial.println("Motor apagado, comando ignorado"); return; }
         int v = valor.toInt();
         if (v < -100) v = -100;
         if (v > 100) v = 100;
         velocidadActual = v;
         tipoFreno = 0;
-
         Serial.print("Velocidad: ");
         if (v < 0) Serial.print("RETROCESO ");
         else if (v > 0) Serial.print("AVANCE ");
         else Serial.print("DETENIDO ");
         Serial.println(String(abs(v)) + "%");
       }
-      // ===== VELOCIDAD MENOS (resta 25) =====
-      else if (tipo == "velocidad_menos") {
-        if (!motorEncendido) {
-          Serial.println("Motor apagado, comando ignorado");
-          return;
-        }
-        velocidadActual = velocidadActual - 25;
-        if (velocidadActual < -100) velocidadActual = -100;
-        tipoFreno = 0;
-        atrasPresionado = true;
-
-        Serial.print("Velocidad menos: ");
-        Serial.println(velocidadActual);
+      else if (tipo == "subiendo") {
+        subiendo = (valor == "on");
+        Serial.print("Subiendo: ");
+        Serial.println(subiendo ? "ON" : "OFF");
       }
-      // ===== VELOCIDAD STOP =====
-      else if (tipo == "velocidad_stop") {
-        atrasPresionado = false;
-        Serial.println("Velocidad stop");
+      else if (tipo == "bajando") {
+        bajando = (valor == "on");
+        Serial.print("Bajando: ");
+        Serial.println(bajando ? "ON" : "OFF");
       }
-      // ===== FRENO ROJO (rapido) =====
       else if (tipo == "freno") {
-        if (!motorEncendido) {
-          Serial.println("Motor apagado, comando ignorado");
-          return;
-        }
+        if (!motorEncendido) { Serial.println("Motor apagado, comando ignorado"); return; }
         tipoFreno = 1;
         atrasPresionado = false;
+        subiendo = false;
+        bajando = false;
         Serial.println("FRENO ROJO (rapido)");
       }
-      // ===== FRENO AMARILLO (lento) =====
       else if (tipo == "stop_secuencial") {
-        if (!motorEncendido) {
-          Serial.println("Motor apagado, comando ignorado");
-          return;
-        }
+        if (!motorEncendido) { Serial.println("Motor apagado, comando ignorado"); return; }
         tipoFreno = 2;
         atrasPresionado = false;
+        subiendo = false;
+        bajando = false;
         Serial.println("FRENO AMARILLO (lento)");
       }
-      // ===== LUCES =====
       else if (tipo == "luces_altas") {
-        if (!sistemaEncendido) {
-          Serial.println("Sistema apagado, comando ignorado");
-          return;
-        }
-        lucesAdelante = !lucesAdelante;
+        if (!sistemaEncendido) { Serial.println("Sistema apagado, comando ignorado"); return; }
+        lucesAdelante = (valor == "on");
         Serial.print("Luces altas: ");
         Serial.println(lucesAdelante ? "ON" : "OFF");
       } else if (tipo == "luces_bajas") {
-        if (!sistemaEncendido) {
-          Serial.println("Sistema apagado, comando ignorado");
-          return;
-        }
-        lucesBajasAdelante = !lucesBajasAdelante;
+        if (!sistemaEncendido) { Serial.println("Sistema apagado, comando ignorado"); return; }
+        lucesBajasAdelante = (valor == "on");
         Serial.print("Luces bajas: ");
         Serial.println(lucesBajasAdelante ? "ON" : "OFF");
       } else if (tipo == "luces_motor") {
-        if (!sistemaEncendido) {
-          Serial.println("Sistema apagado, comando ignorado");
-          return;
-        }
-        lucesMotor = !lucesMotor;
+        if (!sistemaEncendido) { Serial.println("Sistema apagado, comando ignorado"); return; }
+        lucesMotor = (valor == "on");
         Serial.print("Luces motor: ");
         Serial.println(lucesMotor ? "ON" : "OFF");
       } else if (tipo == "luces_techo") {
-        if (!sistemaEncendido) {
-          Serial.println("Sistema apagado, comando ignorado");
-          return;
-        }
-        lucesTecho = !lucesTecho;
+        if (!sistemaEncendido) { Serial.println("Sistema apagado, comando ignorado"); return; }
+        lucesTecho = (valor == "on");
         Serial.print("Luces techo: ");
         Serial.println(lucesTecho ? "ON" : "OFF");
       } else if (tipo == "luces_tablero") {
-        if (!sistemaEncendido) {
-          Serial.println("Sistema apagado, comando ignorado");
-          return;
-        }
-        lucesTablero = !lucesTablero;
+        if (!sistemaEncendido) { Serial.println("Sistema apagado, comando ignorado"); return; }
+        lucesTablero = (valor == "on");
         Serial.print("Luces tablero: ");
         Serial.println(lucesTablero ? "ON" : "OFF");
       } else if (tipo == "luces_bajas_atras") {
-        if (!sistemaEncendido) {
-          Serial.println("Sistema apagado, comando ignorado");
-          return;
-        }
-        lucesBajasAtras = !lucesBajasAtras;
+        if (!sistemaEncendido) { Serial.println("Sistema apagado, comando ignorado"); return; }
+        lucesBajasAtras = (valor == "on");
         Serial.print("Luces bajas atras: ");
         Serial.println(lucesBajasAtras ? "ON" : "OFF");
       }
-      // ===== SONIDO =====
       else if (tipo == "sonido") {
-        if (!sistemaEncendido) {
-          Serial.println("Sistema apagado, comando ignorado");
-          return;
-        }
-        sonidoActivo = !sonidoActivo;
+        if (!sistemaEncendido) { Serial.println("Sistema apagado, comando ignorado"); return; }
+        sonidoActivo = (valor == "on");
         Serial.print("Bocina: ");
-        Serial.println(sonidoActivo ? "pipiiiii ON" : "pipiiiii OFF");
+        Serial.println(sonidoActivo ? "ON" : "OFF");
       }
-      // ===== JUEGO LUCES (comentado) =====
-      // else if (tipo == "juego_luces") {
-      //   Serial.println("Juego de luces");
-      // }
       break;
     }
-
-    default: {
-      break;
-    }
+    default: break;
   }
 }
 
@@ -575,6 +445,8 @@ void resetTodo() {
   direccionActiva = false;
   tipoFreno = 0;
   atrasPresionado = false;
+  subiendo = false;
+  bajando = false;
 
   digitalWrite(DIR_IN1, LOW);
   digitalWrite(DIR_IN2, LOW);
@@ -583,7 +455,6 @@ void resetTodo() {
   setVelocidad(0);
   apagarTodasLasLuces();
 
-  // Apagar todas las variables de luces
   lucesAtras = false;
   lucesAdelante = false;
   lucesMotor = false;
@@ -616,45 +487,22 @@ void motorStop() {
 }
 
 // ===== TRACCION =====
-void aplicarTraccion() {
-  if (velocidadActual > 0) {
-    motorTraccionAdelante(abs(velocidadActual));
-  } else if (velocidadActual < 0) {
-    motorTraccionAtras(abs(velocidadActual));
-  } else {
-    motorTraccionDetener();
-  }
-}
-
 void motorTraccionAdelante(int velocidad) {
   digitalWrite(TRAC_IN1, HIGH);
   digitalWrite(TRAC_IN2, LOW);
   setVelocidad(velocidad);
-  // Serial.println("Traccion: ADELANTE a " + String(velocidad) + "%");
 }
 
 void motorTraccionAtras(int velocidad) {
   digitalWrite(TRAC_IN1, LOW);
   digitalWrite(TRAC_IN2, HIGH);
   setVelocidad(velocidad);
-  // Serial.println("Traccion: ATRAS a " + String(velocidad) + "%");
 }
 
 void motorTraccionDetener() {
   digitalWrite(TRAC_IN1, LOW);
   digitalWrite(TRAC_IN2, LOW);
   setVelocidad(0);
-  // Serial.println("Traccion: DETENIDA");
-}
-
-void frenoActivo() {
-  digitalWrite(TRAC_IN1, HIGH);
-  digitalWrite(TRAC_IN2, HIGH);
-  setVelocidad(0);
-  digitalWrite(DIR_IN1, LOW);
-  digitalWrite(DIR_IN2, LOW);
-  velocidadActual = 0;
-  Serial.println("FRENO ACTIVO");
 }
 
 void setVelocidad(int porcentaje) {
@@ -683,7 +531,6 @@ void apagarTodasLasLuces() {
   tiraBajasAtras.show();
 }
 
-// Tira atras: direccion (amarillo)
 void encenderLucesAtras() {
   if (direccionActual == IZQUIERDA) {
     tiraAtras.setPixelColor(0, 255, 200, 0);
@@ -699,7 +546,6 @@ void encenderLucesAtras() {
   tiraAtras.show();
 }
 
-// Tira atras: freno (LED 1 y 2 rojo)
 void encenderFrenoAtras() {
   tiraAtras.setPixelColor(0, 0, 0, 0);
   tiraAtras.setPixelColor(1, 255, 0, 0);
@@ -708,7 +554,6 @@ void encenderFrenoAtras() {
   tiraAtras.show();
 }
 
-// Luces altas adelante (blanco)
 void encenderLucesAdelante() {
   for (int i = 0; i < LED_ADELANTE_NUM; i++) {
     tiraAdelante.setPixelColor(i, 255, 255, 255);
@@ -716,7 +561,6 @@ void encenderLucesAdelante() {
   tiraAdelante.show();
 }
 
-// Luces bajas adelante (blanco)
 void encenderLucesBajasAdelante() {
   for (int i = 0; i < LED_BAJAS_ADELANTE_NUM; i++) {
     tiraBajasAdelante.setPixelColor(i, 255, 255, 255);
@@ -724,7 +568,6 @@ void encenderLucesBajasAdelante() {
   tiraBajasAdelante.show();
 }
 
-// Luces motor (secuencia azul verdoso)
 void encenderLucesMotor() {
   for (int i = 0; i < LED_MOTOR_NUM; i++) {
     tiraMotor.setPixelColor(i, 0, 150, 100);
@@ -732,7 +575,6 @@ void encenderLucesMotor() {
   tiraMotor.show();
 }
 
-// Luces techo (secuencia azul verdoso)
 void encenderLucesTecho() {
   for (int i = 0; i < LED_TECHO_NUM; i++) {
     tiraTecho.setPixelColor(i, 0, 150, 100);
@@ -740,7 +582,6 @@ void encenderLucesTecho() {
   tiraTecho.show();
 }
 
-// Luces tablero (secuencia azul verdoso)
 void encenderLucesTablero() {
   for (int i = 0; i < LED_TABLERO_NUM; i++) {
     tiraTablero.setPixelColor(i, 0, 150, 100);
@@ -748,10 +589,52 @@ void encenderLucesTablero() {
   tiraTablero.show();
 }
 
-// Luces bajas atras (rojo)
 void encenderLucesBajasAtras() {
   for (int i = 0; i < LED_BAJAS_ATRAS_NUM; i++) {
     tiraBajasAtras.setPixelColor(i, 255, 0, 0);
   }
   tiraBajasAtras.show();
+}
+
+// ===== CASCADA TABLERO (extremos al centro) =====
+void cascadaTablero() {
+  static unsigned long ultimoCambio = 0;
+  static int paso = 0;
+  static bool inicializado = false;
+
+  if (!inicializado) {
+    tiraTablero.clear();
+    tiraTablero.show();
+    paso = 0;
+    ultimoCambio = millis();
+    inicializado = true;
+    return;
+  }
+
+  if (millis() - ultimoCambio >= 10) {
+    ultimoCambio = millis();
+
+    if (paso == 0) {
+      tiraTablero.clear();
+      tiraTablero.setPixelColor(0, 0, 150, 100);
+      tiraTablero.setPixelColor(5, 0, 150, 100);
+      tiraTablero.show();
+    } else if (paso == 1) {
+      tiraTablero.setPixelColor(1, 0, 150, 100);
+      tiraTablero.setPixelColor(4, 0, 150, 100);
+      tiraTablero.show();
+    } else if (paso == 2) {
+      tiraTablero.setPixelColor(2, 0, 150, 100);
+      tiraTablero.setPixelColor(3, 0, 150, 100);
+      tiraTablero.show();
+    } else if (paso == 3) {
+      tiraTablero.clear();
+      tiraTablero.show();
+    } else if (paso >= 4) {
+      paso = -1;
+      inicializado = false;
+    }
+
+    paso++;
+  }
 }
