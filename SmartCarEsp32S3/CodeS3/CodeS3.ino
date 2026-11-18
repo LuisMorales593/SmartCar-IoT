@@ -12,7 +12,7 @@
 // ===== CONFIGURACIÓN =====
 const char* SSID = "GaiaElCaballero";
 const char* PASSWORD = "Gaialord40@";
-const char* SERVER_HOST = "172.26.214.73"; // IP actual de tu PC
+const char* SERVER_HOST = "10.209.8.73"; // IP actual de tu PC
 const int SERVER_PORT = 8080;
 #define VEHICULO_ID 3
 
@@ -44,28 +44,28 @@ const int SERVER_PORT = 8080;
 enum Direccion { IZQUIERDA, DERECHA, STOP };
 
 // ===== VARIABLES =====
-volatile bool sistemaEncendido = false;
-volatile bool motorEncendido = false;
-volatile int velocidadActual = 0;
-volatile Direccion direccionActual = STOP;
-volatile bool direccionActiva = false;
-volatile int tipoFreno = 0;
-volatile bool atrasPresionado = false;
+volatile bool sistemaEncendido = false;        // Sistema encendido
+volatile bool motorEncendido = false;          // Motor encendido
+volatile int velocidadActual = 0;              // Velocidad actual
+volatile Direccion direccionActual = STOP;     // Dirección actual
+volatile bool direccionActiva = false;         // Direccional activa
+volatile int tipoFreno = 0;                    // Tipo de freno
+volatile bool atrasPresionado = false;         // Botón atrás presionado
 
-volatile bool lucesAtras = false;
-volatile bool lucesAdelante = false; 
-volatile bool lucesBajasAdelante = false; 
-volatile bool lucesMotor = false;
-volatile bool lucesTecho = false;
-volatile bool lucesTablero = false;
+volatile bool lucesAtras = false;              // Luces traseras
+volatile bool lucesAdelante = false;           // Luces altas delanteras
+volatile bool lucesBajasAdelante = false;      // Luces bajas delanteras
+volatile bool lucesMotor = false;              // Luces del motor
+volatile bool lucesTecho = false;              // Luces del techo
+volatile bool lucesTablero = false;            // Luces del tablero
 
 // CÁMARA (Inicia apagada)
-bool camaraEncendida = false; 
+bool camaraEncendida = false;                  // Cámara encendida
 
-volatile bool wsConectado = false;
-volatile int heartbeatFallos = 0;
-const int MAX_HEARTBEAT_FALLOS = 5; 
-WebSocketsClient webSocket;
+volatile bool wsConectado = false;             // WebSocket conectado
+volatile int heartbeatFallos = 0;              // Fallos de heartbeat
+const int MAX_HEARTBEAT_FALLOS = 5;            // Máximo de fallos
+WebSocketsClient webSocket;                    // Cliente WebSocket
 
 // ===== OBJETOS NeoPixel =====
 Adafruit_NeoPixel tiraAtras         = Adafruit_NeoPixel(LED_ATRAS_NUM, LED_ATRAS_PIN, NEO_GRB + NEO_KHZ800);
@@ -141,7 +141,7 @@ void setup() {
   ledcAttach(TRAC_IN1, 20000, 8); 
   ledcAttach(TRAC_IN2, 20000, 8); 
 
-  // Aseguramos que ambos pines de tracción arranquen en 0
+  // Asegurar que ambos pines de tracción arranquen en 0
   ledcWrite(TRAC_IN1, 0);
   ledcWrite(TRAC_IN2, 0);
 
@@ -151,7 +151,7 @@ void setup() {
   tiraAtras.begin(); tiraTurbo.begin(); tiraMotor.begin();
   tiraTecho.begin(); tiraTablero.begin(); tiraAltas.begin(); tiraBajasAtras.begin();
 
-  // ✅ Brillo al 50% en todas las tiras (ahorra corriente)
+  // Brillo al 50% en todas las tiras (ahorrar corriente)
   tiraAtras.setBrightness(128);
   tiraTurbo.setBrightness(128);
   tiraMotor.setBrightness(128);
@@ -169,7 +169,7 @@ void setup() {
     delay(500);
     Serial.print(".");
   }
-  Serial.println("\n✅ Conectado! IP: " + WiFi.localIP().toString());
+  Serial.println("\nConectado! IP: " + WiFi.localIP().toString());
 
   webSocket.begin(SERVER_HOST, SERVER_PORT, "/ws/comandos");
   webSocket.onEvent(webSocketEvent);
@@ -186,17 +186,18 @@ void setup() {
 void loop() { vTaskDelay(portMAX_DELAY); }
 
 // ===== TAREA DE LA CÁMARA =====
+// Iniciar la cámara y gestionar el servidor de stream
 void tareaCamara(void *pvParameters) {
   usbCam = new USB_STREAM();
   
-  usbCam->uvcConfiguration(480, 320, FRAME_INTERVAL_FPS_30, 55 * 1024, _xferBufferA, _xferBufferB, 55 * 1024, _frameBuffer);
+  usbCam->uvcConfiguration(480, 320, FRAME_INTERVAL_FPS_10, 55 * 1024, _xferBufferA, _xferBufferB, 55 * 1024, _frameBuffer);
   usbCam->uvcCamRegisterCb(&onCameraFrameCallback, NULL);
   
   usbCam->start();
   usbCam->connectWait(1000);
   
   usbCam->uvcCamSuspend(NULL);
-  Serial.println("💤 Cámara iniciada en modo SLEEP (apagada)");
+  Serial.println("Cámara iniciada en modo SLEEP (apagada)");
 
   server.begin();
 
@@ -220,7 +221,7 @@ void tareaCamara(void *pvParameters) {
           streamClient = newClient;
           streamClient.setNoDelay(true); 
           streamClient.setTimeout(1); 
-          Serial.println("📺 Navegador conectado al stream");
+          Serial.println("Navegador conectado al stream");
         }
         
         if (streamClient && !streamClient.connected()) {
@@ -232,8 +233,10 @@ void tareaCamara(void *pvParameters) {
 }
 
 // ===== TAREAS BASE =====
+// Mantener activo el bucle del WebSocket
 void tareaWebSocket(void *pvParameters) { while (true) { webSocket.loop(); vTaskDelay(pdMS_TO_TICKS(10)); } }
 
+// Medir la batería y enviar el heartbeat al servidor
 void tareaHeartbeat(void *pvParameters) { 
   while (true) { 
     long suma = 0;
@@ -243,7 +246,7 @@ void tareaHeartbeat(void *pvParameters) {
     }
     int mv = suma / 10;
     float vBat = (mv * 4) / 1000.0;
-    Serial.printf("💓 Latido OK | 🔋 Batería: %.2fV\n", vBat);
+    Serial.printf("Latido OK | Batería: %.2fV\n", vBat);
     if (WiFi.status() == WL_CONNECTED) {
       enviarHeartbeat(vBat); 
     }
@@ -251,6 +254,7 @@ void tareaHeartbeat(void *pvParameters) {
   } 
 }
 
+// Controlar el motor de dirección según la dirección actual
 void tareaMotorDireccion(void *pvParameters) {
   Direccion ultimaDireccion = STOP;
   while (true) {
@@ -264,6 +268,7 @@ void tareaMotorDireccion(void *pvParameters) {
   }
 }
 
+// Controlar la velocidad y el freno del motor de tracción
 void tareaMotorVelocidad(void *pvParameters) {
   while (true) {
     if (tipoFreno == 1) { 
@@ -281,6 +286,7 @@ void tareaMotorVelocidad(void *pvParameters) {
 }
 
 // ===== TAREA DE LUCES =====
+// Controlar todas las luces del vehículo
 void tareaLuces(void *pvParameters) {
   while (true) {
     if (!sistemaEncendido) {
@@ -328,7 +334,7 @@ void tareaLuces(void *pvParameters) {
         for(int i=0; i<LED_TURBO_NUM; i++) tiraTurbo.setPixelColor(i, colorTurbo);
         tiraTurbo.show();
 
-        // Luces motor (tornado) - controladas por flag lucesMotor
+        // Luces motor (tornado) - controlar por flag lucesMotor
         if (lucesMotor) { 
             static unsigned long ultimoMotor = 0;
             static int tornadoIndex = 0;
@@ -351,7 +357,7 @@ void tareaLuces(void *pvParameters) {
         tiraMotor.show();
 
       } else {
-        // Motor apagado → todas las automáticas OFF
+        // Motor apagado -> todas las automáticas OFF
         tiraAtras.clear();
         tiraBajasAtras.clear();
         tiraTurbo.clear();
@@ -362,15 +368,15 @@ void tareaLuces(void *pvParameters) {
         tiraMotor.show();
       }
 
-      // === LUCES MANUALES: solo dependen del sistema encendido ===
+      // === LUCES MANUALES: solo depender del sistema encendido ===
       if (lucesAdelante) { for(int i=0; i<LED_ALTAS_NUM; i++) tiraAltas.setPixelColor(i, 255, 255, 255); } else { tiraAltas.clear(); }
       tiraAltas.show();
 
-      // ✅ TECHO: ahora CIAN (0, 200, 255)
+      // TECHO: CIAN (0, 200, 255)
       if (lucesTecho) { for(int i=0; i<LED_TECHO_NUM; i++) tiraTecho.setPixelColor(i, 0, 200, 255); } else { tiraTecho.clear(); }
       tiraTecho.show();
 
-      // ✅ TABLERO: ahora CIAN (0, 200, 255)
+      // TABLERO: CIAN (0, 200, 255)
       if (lucesTablero) { for(int i=0; i<LED_TABLERO_NUM; i++) tiraTablero.setPixelColor(i, 0, 200, 255); } else { tiraTablero.clear(); }
       tiraTablero.show();
     }
@@ -398,10 +404,10 @@ void webSocketEvent(WStype_t type, uint8_t * payload, size_t length) {
       else if (tipo == "motor" && sistemaEncendido) { 
           motorEncendido = (valor == "on"); 
           if (motorEncendido) {
-              lucesMotor = true;  // ✅ Auto-on: luces motor al encender motor
+              lucesMotor = true;  // Auto-on: luces motor al encender motor
           } else {
               velocidadActual = 0; 
-              lucesMotor = false;  // ✅ Auto-off: luces motor al apagar motor
+              lucesMotor = false;  // Auto-off: luces motor al apagar motor
           }
       }
       else if (tipo == "reset") { resetTodo(); }
@@ -430,7 +436,7 @@ void webSocketEvent(WStype_t type, uint8_t * payload, size_t length) {
       else if (tipo == "velocidad" && motorEncendido) { 
           velocidadActual = constrain(valor.toInt(), -100, 100); 
           tipoFreno = 0; 
-          Serial.print("📩 Comando recibido: "); Serial.println(velocidadActual);
+          Serial.print("Comando recibido: "); Serial.println(velocidadActual);
       }
       
       else if (tipo == "freno" && motorEncendido) { tipoFreno = 1; atrasPresionado = false; }
@@ -479,7 +485,7 @@ void resetTodo() {
     if (streamClient.connected()) streamClient.stop();
     if (usbCam != NULL) usbCam->uvcCamSuspend(NULL);
     camaraEncendida = false;
-    Serial.println("💤 Cámara dormida por reset");
+    Serial.println("Cámara dormida por reset");
   }
 }
 
@@ -500,7 +506,7 @@ void motorTraccionAdelante(int velocidad) {
   
   static int ultimoPwmFwd = -1;
   if (pwm != ultimoPwmFwd) {
-    Serial.print("⚙️ FWD Vel: "); Serial.print(v); Serial.print("% | PWM: "); Serial.println(pwm);
+    Serial.print("FWD Vel: "); Serial.print(v); Serial.print("% | PWM: "); Serial.println(pwm);
     ultimoPwmFwd = pwm;
   }
   
@@ -520,7 +526,7 @@ void motorTraccionAtras(int velocidad) {
   
   static int ultimoPwmBwd = -1;
   if (pwm != ultimoPwmBwd) {
-    Serial.print("⚙️ BWD Vel: "); Serial.print(v); Serial.print("% | PWM: "); Serial.println(pwm);
+    Serial.print("BWD Vel: "); Serial.print(v); Serial.print("% | PWM: "); Serial.println(pwm);
     ultimoPwmBwd = pwm;
   }
   
